@@ -5,12 +5,12 @@
   },
   "exported_at": "2026-07-12T21:20:00+00:00",
   "name": "LinyaShare",
-  "author": "Linya@sknif.de",
+  "author": "linya@sknif.de",
   "description": "Optimized LinyaShare Egg for Next.js 15 (Standalone).",
   "docker_images": {
     "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
   },
-  "startup": "bash /home/container/start.sh",
+  "startup": "mkdir -p /home/container/prisma && cd /home/container || exit 1 && if [ \"${AUTO_UPDATE}\" = \"true\" ]; then git config --global --replace-all user.email \"pterodactyl@localhost\" && git config --global --replace-all user.name \"Pterodactyl Panel\" && git fetch origin && TARGET_BRANCH=${GIT_BRANCH:-main} && if [ \"$(git rev-parse --abbrev-ref HEAD)\" != \"$TARGET_BRANCH\" ]; then git checkout \"$TARGET_BRANCH\"; fi && git pull origin \"$TARGET_BRANCH\" && if git diff --name-only HEAD~1 | grep -q \"package.json\"; then npm install; fi; fi && export PORT=\"25542\" && export NEXT_PUBLIC_APP_URL=\"${NEXT_PUBLIC_APP_URL:-http://localhost:$PORT}\" && export NEXTAUTH_URL=\"${NEXTAUTH_URL:-$NEXT_PUBLIC_APP_URL}\" && export AUTH_TRUST_HOST=\"${AUTH_TRUST_HOST:-true}\" && export DATABASE_URL=\"file:/home/container/prisma/linyashare.db\" && export UPLOAD_DIR=\"/home/container/data/uploads\" && export IMPORT_DIR=\"/home/container/data/import\" && mkdir -p \"$UPLOAD_DIR\" \"$IMPORT_DIR\" && npm run build && mkdir -p .next/standalone/.next/static && cp -rf .next/static/* .next/standalone/.next/static/ 2>/dev/null || true && [ -d public ] && cp -rf public/* .next/standalone/public/ 2>/dev/null || true && DATABASE_URL=file:/home/container/prisma/linyashare.db npx prisma db push --schema=prisma/schema.prisma && cd .next/standalone && HOSTNAME=\"0.0.0.0\" DATABASE_URL=file:/home/container/prisma/linyashare.db node server.js",
   "config": {
     "files": "{}",
     "startup": "{\"done\":[\"started server on\", \"listening on\"]}",
@@ -20,11 +20,6 @@
   "scripts": {
     "installation": {
       "script": "export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y git curl ca-certificates python3 make g++ && mkdir -p /mnt/server && cd /mnt/server && git clone -b \"${GIT_BRANCH:-main}\" \"${GIT_REPO:-https://github.com/shyskyfox/LinyaShare.git}\" . && npm install",
-      "container": "node:22-bookworm",
-      "entrypoint": "bash"
-    },
-    "startup": {
-      "script": "cd /home/container || exit 1 && if [ \"${AUTO_UPDATE}\" = \"true\" ]; then git config --global user.email \"pterodactyl@localhost\" && git config --global user.name \"Pterodactyl Panel\" && git fetch origin && TARGET_BRANCH=\"${GIT_BRANCH:-main}\" && CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD) && if [ \"$CURRENT_BRANCH\" != \"$TARGET_BRANCH\" ]; then git checkout \"$TARGET_BRANCH\"; fi && git pull origin \"$TARGET_BRANCH\" && if git diff --name-only HEAD~1 | grep -q \"package.json\"; then npm install; fi; fi && export PORT=\"${SERVER_PORT}\" && export NEXT_PUBLIC_APP_URL=\"${NEXT_PUBLIC_APP_URL:-http://localhost:$PORT}\" && export NEXTAUTH_URL=\"${NEXTAUTH_URL:-$NEXT_PUBLIC_APP_URL}\" && export AUTH_TRUST_HOST=\"${AUTH_TRUST_HOST:-true}\" && export DATABASE_URL=\"file:/home/container/prisma/linyashare.db\" && npm run build && mkdir -p .next/standalone/.next/static && cp -rf .next/static/* .next/standalone/.next/static/ 2>/dev/null || true && [ -d public ] && cp -rf public/* .next/standalone/public/ 2>/dev/null || true && npm run setup && cd .next/standalone && node server.js",
       "container": "node:22-bookworm",
       "entrypoint": "bash"
     }
