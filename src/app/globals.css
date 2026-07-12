@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-900 text-white antialiased;
+    background-image: 
+      radial-gradient(ellipse at 15% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 20%, rgba(236, 72, 153, 0.06) 0%, transparent 50%);
+    background-size: 100% 100%;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  25% { transform: translateY(-20px) translateX(10px); }
+  50% { transform: translateY(10px) translateX(-20px); }
+  75% { transform: translateY(-10px) translateX(15px); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-dark-800/10 backdrop-blur-3xl border border-dark-600/10 rounded-2xl shadow-xl relative z-10;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-primary-500/15 hover:shadow-primary-500/5 hover:shadow-[0_0_30px_rgba(236,72,153,0.05)];
+  }
+
+  .glow-border {
+    @apply border border-primary-500/15 shadow-[0_0_15px_rgba(236,72,153,0.1)] relative z-10;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-600/90 to-primary-500/90 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl
+           transition-all duration-300 hover:from-primary-500 hover:to-primary-400
+           hover:shadow-lg hover:shadow-primary-500/25 hover:scale-[1.02]
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+           relative z-10 text-sm sm:text-base;
+  }
+
+  .btn-secondary {
+    @apply bg-dark-700/40 backdrop-blur-md text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl
+           border border-dark-500/20 transition-all duration-300
+           hover:bg-dark-600/40 hover:border-primary-500/30 hover:scale-[1.02]
+           active:scale-[0.98]
+           relative z-10 text-sm sm:text-base;
+  }
+
+  .btn-danger {
+    @apply bg-red-600/10 text-red-400 font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl
+           border border-red-500/15 transition-all duration-300
+           hover:bg-red-600/20 hover:border-red-500/30 hover:scale-[1.02]
+           active:scale-[0.98]
+           relative z-10 text-sm sm:text-base;
+  }
+
+  .input-field {
+    @apply w-full bg-dark-800/30 backdrop-blur-md border border-dark-500/20 text-white rounded-xl px-3 sm:px-4 py-2 sm:py-3
+           transition-all duration-300 placeholder:text-dark-400
+           focus:outline-none focus:border-primary-500/40 focus:ring-2 focus:ring-primary-500/5
+           focus:shadow-[0_0_20px_rgba(236,72,153,0.03)]
+           relative z-10 text-sm sm:text-base;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-white mb-6;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #11111a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e1e2e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Loading animation */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #1e1e2e;
+  border-top-color: #ec4899;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Markdown content styles */
+.markdown-content h1:first-child {
+  margin-top: 0;
+}
+
+.markdown-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.markdown-content table thead th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.markdown-content table thead th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.markdown-content table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+
+.markdown-content table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
+}
+
+.markdown-content pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb {
+  background: #1e1e2e;
+  border-radius: 3px;
+}
+
+.markdown-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}

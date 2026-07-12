@@ -1,0 +1,120 @@
+"use client"
+
+import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
+import { Copy, Lock, EyeOff, Trash2, MoreVertical } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+
+interface MobileFileMenuProps {
+  file: any
+  onCopyShareUrl: () => void
+  onEditPassword: () => void
+  onRemovePassword: () => void
+  onDelete: () => void
+}
+
+export default function MobileFileMenu({ file, onCopyShareUrl, onEditPassword, onRemovePassword, onDelete }: MobileFileMenuProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+
+  // Berechne die Position des Buttons beim Öffnen
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setMenuPos({
+        top: rect.bottom + window.scrollY + 4, // 4px Abstand nach unten
+        left: rect.left + window.scrollX - 140, // 140px nach links (Menübreite)
+      })
+    }
+  }, [isOpen])
+
+  const menuItems = [
+    ...(file.hasPassword
+      ? [
+          {
+            label: "Edit password",
+            icon: Lock,
+            onClick: () => {
+              onEditPassword()
+              setIsOpen(false)
+            },
+          },
+          {
+            label: "Remove password",
+            icon: EyeOff,
+            onClick: () => {
+              onRemovePassword()
+              setIsOpen(false)
+            },
+          },
+        ]
+      : []),
+    {
+      label: "Delete",
+      icon: Trash2,
+      onClick: () => {
+        onDelete()
+        setIsOpen(false)
+      },
+      danger: true,
+    },
+  ]
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-700/50 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+        aria-label="More actions"
+      >
+        <MoreVertical className="w-5 h-5" />
+      </button>
+
+      {isOpen && createPortal(
+        <>
+          {/* Backdrop zum Schließen bei Klick außerhalb */}
+          <div 
+            className="fixed inset-0 z-[9998]" 
+            onClick={() => setIsOpen(false)} 
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -5 }}
+            transition={{ duration: 0.15 }}
+            style={{ 
+              position: 'absolute',
+              top: menuPos.top,
+              left: menuPos.left,
+              zIndex: 9999
+            }}
+          >
+            <div className="glass-card p-2 min-w-[180px] shadow-xl bg-dark-800/95 backdrop-blur-md border border-dark-600/50">
+              {menuItems.map((item, index) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={index}
+                    onClick={item.onClick}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      item.danger
+                        ? "text-red-400 hover:bg-red-600/10"
+                        : "text-dark-300 hover:text-white hover:bg-dark-700/50"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        </>,
+        document.body
+      )}
+    </div>
+  )
+}
