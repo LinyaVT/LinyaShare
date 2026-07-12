@@ -149,7 +149,7 @@ nano .env
 **Production .env example:**
 
 ```env
-DATABASE_URL="file:./prisma/linyashare.db"
+DATABASE_URL="file:./linyashare.db"
 NEXTAUTH_SECRET="u3H8gR9kL2mN5pQ7rT1vX4zA6cD9fG0jK2lM4nP6rS"
 NEXTAUTH_URL="https://share.example.com"
 NEXT_PUBLIC_APP_URL="https://share.example.com"

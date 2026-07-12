@@ -37,7 +37,7 @@
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | `file:./prisma/linyashare.db` | SQLite database connection |
+| `DATABASE_URL` | Yes | `file:./linyashare.db` | SQLite database connection |
 | `NEXTAUTH_SECRET` | Yes | - | JWT encryption key |
 | `NEXTAUTH_URL` | Yes | `http://localhost:3000` | Full instance URL |
 | `NEXT_PUBLIC_APP_URL` | Yes | `http://localhost:3000` | Public URL for share links |
@@ -58,11 +58,11 @@
 | Attribute | Value |
 |-----------|-------|
 | Required | Yes |
-| Default | `file:./prisma/linyashare.db` |
+| Default | `file:./linyashare.db` |
 | Type | SQLite connection string |
 
 ```env
-DATABASE_URL="file:./prisma/linyashare.db"
+DATABASE_URL="file:./linyashare.db"
 ```
 
 > [!NOTE]
@@ -223,7 +223,7 @@ sequenceDiagram
 ### Development (.env)
 
 ```env
-DATABASE_URL="file:./prisma/linyashare.db"
+DATABASE_URL="file:./linyashare.db"
 NEXTAUTH_SECRET="my-dev-secret-change-me"
 NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -234,7 +234,7 @@ IMPORT_DIR="data/import"
 ### Production (.env)
 
 ```env
-DATABASE_URL="file:./prisma/user.db"
+DATABASE_URL="file:./linyashare.db"
 NEXTAUTH_SECRET="u3H8gR9kL2mN5pQ7rT1vX4zA6cD9fG0jK2lM4nP6rS"
 NEXTAUTH_URL="https://share.example.com"
 NEXT_PUBLIC_APP_URL="https://share.example.com"
