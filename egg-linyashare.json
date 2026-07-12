@@ -5,7 +5,7 @@
   },
   "exported_at": "2026-07-12T21:20:00+00:00",
   "name": "LinyaShare",
-  "author": "admin@example.com",
+  "author": "Linya@sknif.de",
   "description": "Optimized LinyaShare Egg for Next.js 15 (Standalone).",
   "docker_images": {
     "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
@@ -30,12 +30,68 @@
     }
   },
   "variables": [
-    { "name": "GitHub Repository", "description": "URL to the LinyaShare GitHub repository.", "env_variable": "GIT_REPO", "default_value": "https://github.com/shyskyfox/LinyaShare.git", "user_viewable": true, "user_editable": true, "rules": "required|string|max:255" },
-    { "name": "Git Branch", "description": "The branch to clone (e.g., main).", "env_variable": "GIT_BRANCH", "default_value": "main", "user_viewable": true, "user_editable": true, "rules": "required|string|max:100" },
-    { "name": "Auto-Update", "description": "If 'true', pulls the latest code from GitHub on every server restart.", "env_variable": "AUTO_UPDATE", "default_value": "false", "user_viewable": true, "user_editable": true, "rules": "required|boolean" },
-    { "name": "NextAuth Secret", "description": "A random secret key for session encryption.", "env_variable": "NEXTAUTH_SECRET", "default_value": "", "user_viewable": true, "user_editable": true, "rules": "required|string|max:64" },
-    { "name": "Public App URL", "description": "The public URL of your instance (e.g., https://share.example.com).", "env_variable": "NEXT_PUBLIC_APP_URL", "default_value": "", "user_viewable": true, "user_editable": true, "rules": "nullable|string|max:255" },
-    { "name": "NextAuth URL", "description": "Callback URL for Auth. Defaults to Public App URL if left empty.", "env_variable": "NEXTAUTH_URL", "default_value": "", "user_viewable": true, "user_editable": true, "rules": "nullable|string|max:255" },
-    { "name": "Auth Trust Host", "description": "Set to 'true' to allow the server to trust the incoming host header.", "env_variable": "AUTH_TRUST_HOST", "default_value": "true", "user_viewable": true, "user_editable": true, "rules": "required|boolean" }
+    {
+      "name": "GitHub Repository",
+      "description": "URL to the LinyaShare GitHub repository.",
+      "env_variable": "GIT_REPO",
+      "default_value": "https://github.com/shyskyfox/LinyaShare.git",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "required|string|max:255"
+    },
+    {
+      "name": "Git Branch",
+      "description": "The branch to clone (e.g., main).",
+      "env_variable": "GIT_BRANCH",
+      "default_value": "main",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "required|string|max:100"
+    },
+    {
+      "name": "Auto-Update",
+      "description": "If 'true', pulls the latest code from GitHub on every server restart.",
+      "env_variable": "AUTO_UPDATE",
+      "default_value": "false",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "NextAuth Secret",
+      "description": "A random secret key for session encryption.",
+      "env_variable": "NEXTAUTH_SECRET",
+      "default_value": "",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "required|string|max:64"
+    },
+    {
+      "name": "Public App URL",
+      "description": "The public URL of your instance (e.g., https://share.example.com).",
+      "env_variable": "NEXT_PUBLIC_APP_URL",
+      "default_value": "",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "nullable|string|max:255"
+    },
+    {
+      "name": "NextAuth URL",
+      "description": "Callback URL for Auth. Defaults to Public App URL if left empty.",
+      "env_variable": "NEXTAUTH_URL",
+      "default_value": "",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "nullable|string|max:255"
+    },
+    {
+      "name": "Auth Trust Host",
+      "description": "Set to 'true' to allow the server to trust the incoming host header.",
+      "env_variable": "AUTH_TRUST_HOST",
+      "default_value": "true",
+      "user_viewable": 1,
+      "user_editable": 1,
+      "rules": "required|boolean"
+    }
   ]
 }
