@@ -24,7 +24,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} LinyaShare &mdash; Private file sharing
           </p>
           <div className="flex items-center gap-4 text-sm">
-            <Link href="https://github.com/shyskyfox/LinyaShare" target="_blank" className="text-dark-400 hover:text-primary-400 transition-colors flex items-center gap-1">
+            <Link href="https://github.com/LinyaVT/LinyaShare" target="_blank" className="text-dark-400 hover:text-primary-400 transition-colors flex items-center gap-1">
               <Code className="w-3 h-3" /> Source code
             </Link>
             <Link href="/privacy" className="text-dark-400 hover:text-primary-400 transition-colors flex items-center gap-1">
@@ -45,7 +45,7 @@ export default function Footer() {
             )}
           </div>
           <p className="text-xs text-dark-500">
-            Built with ❤️ by <span className="font-semibold"><a href="https://github.com/shyskyfox" target="_blank" rel="noopener noreferrer" className="hover:text-primary-400 transition-colors">Lina</a></span>
+            Built with ❤️ by <span className="font-semibold"><a href="https://github.com/LinyaVT" target="_blank" rel="noopener noreferrer" className="hover:text-primary-400 transition-colors">Lina</a></span>
           </p>
         </div>
       </div>

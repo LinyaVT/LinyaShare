@@ -55,7 +55,7 @@
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/shyskyfox/LinyaShare.git
+git clone https://github.com/LinyaVT/LinyaShare.git
 cd LinyaShare
 npm ci --production
 cp .env.example .env
@@ -129,7 +129,7 @@ mkdir -p /var/www/linyashare
 cd /var/www/linyashare
 
 # Clone
-git clone https://github.com/shyskyfox/LinyaShare.git .
+git clone https://github.com/LinyaVT/LinyaShare.git .
 ```
 
 ### 3. Configure Environment

@@ -19,7 +19,7 @@
   },
   "scripts": {
     "installation": {
-      "script": "export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y git curl ca-certificates python3 make g++ && mkdir -p /mnt/server && cd /mnt/server && git clone -b \"${GIT_BRANCH:-main}\" \"${GIT_REPO:-https://github.com/shyskyfox/LinyaShare.git}\" . && npm install",
+      "script": "export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y git curl ca-certificates python3 make g++ && mkdir -p /mnt/server && cd /mnt/server && git clone -b \"${GIT_BRANCH:-main}\" \"${GIT_REPO:-https://github.com/LinyaVT/LinyaShare.git}\" . && npm install",
       "container": "node:22-bookworm",
       "entrypoint": "bash"
     }
@@ -29,7 +29,7 @@
       "name": "GitHub Repository",
       "description": "URL to the LinyaShare GitHub repository.",
       "env_variable": "GIT_REPO",
-      "default_value": "https://github.com/shyskyfox/LinyaShare.git",
+      "default_value": "https://github.com/LinyaVT/LinyaShare.git",
       "user_viewable": 1,
       "user_editable": 1,
       "rules": "required|string|max:255"

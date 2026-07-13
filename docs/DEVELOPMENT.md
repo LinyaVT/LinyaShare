@@ -59,7 +59,7 @@ graph LR
 
 | Step | Command | Description |
 |------|---------|-------------|
-| 1 | `git clone https://github.com/shyskyfox/LinyaShare.git` | Clone repository |
+| 1 | `git clone https://github.com/LinyaVT/LinyaShare.git` | Clone repository |
 | 2 | `cd LinyaShare` | Enter directory |
 | 3 | `cp .env.example .env` | Create environment file |
 | 4 | `npm install` | Install dependencies |

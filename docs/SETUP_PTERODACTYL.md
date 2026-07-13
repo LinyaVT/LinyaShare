@@ -109,7 +109,7 @@ ghcr.io/parkervcp/yolks:nodejs_22
 | Image | Source | Use Case |
 |-------|--------|----------|
 | `ghcr.io/parkervcp/yolks:nodejs_22` | Official ParkerVCP Yolks | Default |
-| `ghcr.io/shyskyfox/linyashare:latest` | Custom build | Pre-built deployment |
+| `ghcr.io/LinyaVT/linyashare:latest` | Custom build | Pre-built deployment |
 
 ### Startup Command
 
@@ -150,7 +150,7 @@ The egg installation script automatically fetches from GitHub:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GIT_REPO` | `https://github.com/shyskyfox/LinyaShare.git` | Repository URL (change for custom forks) |
+| `GIT_REPO` | `https://github.com/LinyaVT/LinyaShare.git` | Repository URL (change for custom forks) |
 | `GIT_BRANCH` | `main` | Branch to clone (e.g., `main`, `dev`) |
 | `AUTO_UPDATE` | `false` | Enable to auto-pull updates on server restart |
 
@@ -162,7 +162,7 @@ Simply enter a `NEXTAUTH_SECRET` -- everything else is pre-configured for plug-a
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GIT_REPO` | Yes | `https://github.com/shyskyfox/LinyaShare.git` | GitHub repository URL |
+| `GIT_REPO` | Yes | `https://github.com/LinyaVT/LinyaShare.git` | GitHub repository URL |
 | `GIT_BRANCH` | Yes | `main` | Branch to clone and track |
 | `AUTO_UPDATE` | Yes | `false` | Automatically update from GitHub on restart |
 | `NEXTAUTH_SECRET` | Yes | - | JWT encryption key |

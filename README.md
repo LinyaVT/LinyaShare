@@ -6,7 +6,7 @@
 
 > Secure file sharing -- self-hosted, password-protected, media-ready.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-ec4899?style=for-the-badge)](https://github.com/shyskyfox/LinyaShare)
+[![Version](https://img.shields.io/badge/version-1.0.0-ec4899?style=for-the-badge)](https://github.com/LinyaVT/LinyaShare)
 [![Node](https://img.shields.io/badge/node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-64748b?style=for-the-badge)](LICENSE)
@@ -39,7 +39,7 @@
 
 | Step | Command | Description |
 |------|---------|-------------|
-| 1 | `git clone https://github.com/shyskyfox/LinyaShare.git` | Clone repository |
+| 1 | `git clone https://github.com/LinyaVT/LinyaShare.git` | Clone repository |
 | 2 | `cd LinyaShare && npm install` | Install dependencies |
 | 3 | `cp .env.example .env` | Create environment file |
 | 4 | `npm run setup` | Generate Prisma client and create database |
@@ -87,7 +87,7 @@ Open **http://localhost:3000** -- the setup wizard will guide you through admin 
 ### Docker (recommended)
 
 ```bash
-git clone https://github.com/shyskyfox/LinyaShare.git
+git clone https://github.com/LinyaVT/LinyaShare.git
 cd LinyaShare
 docker compose up -d
 ```
@@ -95,7 +95,7 @@ docker compose up -d
 ### Node.js
 
 ```bash
-git clone https://github.com/shyskyfox/LinyaShare.git
+git clone https://github.com/LinyaVT/LinyaShare.git
 cd LinyaShare
 npm install
 npm run setup
@@ -132,6 +132,6 @@ This project is licensed under the AGPLv3 License. See [LICENSE](LICENSE) for de
 
 ---
 
-Built by [Lina](https://github.com/shyskyfox) | [Report Issue](https://github.com/shyskyfox/LinyaShare/issues) | [Documentation](docs/README.md)
+Built by [Lina](https://github.com/LinyaVT) | [Report Issue](https://github.com/LinyaVT/LinyaShare/issues) | [Documentation](docs/README.md)
 
 </div>

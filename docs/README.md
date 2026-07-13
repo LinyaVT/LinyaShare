@@ -156,8 +156,8 @@ graph LR
 
 | Resource | Link |
 |----------|------|
-| Project Repository | [github.com/shyskyfox/LinyaShare](https://github.com/shyskyfox/LinyaShare) |
-| Issue Tracker | [GitHub Issues](https://github.com/shyskyfox/LinyaShare/issues) |
+| Project Repository | [github.com/LinyaVT/LinyaShare](https://github.com/LinyaVT/LinyaShare) |
+| Issue Tracker | [GitHub Issues](https://github.com/LinyaVT/LinyaShare/issues) |
 | Main README | [README.md](../README.md) |
 | Egg File | [egg-linyashare.json](../egg-linyashare.json) |
 

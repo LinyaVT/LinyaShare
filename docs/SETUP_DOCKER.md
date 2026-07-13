@@ -50,7 +50,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/shyskyfox/LinyaShare.git
+git clone https://github.com/LinyaVT/LinyaShare.git
 cd LinyaShare
 
 # 2. Build and start
