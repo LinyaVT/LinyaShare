@@ -8,7 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ shareId: string }> }
 ) {
   try {
-    const { shareId } = await params
+    // .png-Suffix abstreifen (Discord & Co. zeigen OG-Bilder nur mit Dateiendung).
+    // URLs ohne Endung bleiben kompatibel.
+    const { shareId: rawId } = await params
+    const shareId = rawId.replace(/\.png$/i, "")
 
     const file = await getFileByShareId(shareId)
     if (!file) {
@@ -62,10 +65,16 @@ export async function GET(
       }
     }
 
-    return new NextResponse(svg, {
+    // SVG → PNG rasterisieren: Discord, Facebook & Co. rendern kein SVG
+    // in Embeds, sondern nur jpg/png/gif/webp.
+    const sharp = (await import("sharp")).default
+    const pngBuffer = await sharp(Buffer.from(svg), { density: 144 }).png().toBuffer()
+
+    return new NextResponse(pngBuffer, {
       status: 200,
       headers: {
-        "Content-Type": "image/svg+xml",
+        "Content-Type": "image/png",
+        "Content-Length": pngBuffer.length.toString(),
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     })
@@ -120,7 +129,7 @@ function generateLockedSvg(width: number, height: number, fileName: string, uplo
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader} &middot; ${siteName}
+    Shared by ${uploader} &#183; ${siteName}
   </text>
 </svg>`
 }
@@ -165,7 +174,7 @@ function generateImageSvg(width: number, height: number, fileName: string, uploa
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader} &middot; ${siteName}
+    Shared by ${uploader} &#183; ${siteName}
   </text>
 </svg>`
 }
@@ -208,7 +217,7 @@ function generateVideoSvg(width: number, height: number, fileName: string, uploa
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader} &middot; ${siteName}
+    Shared by ${uploader} &#183; ${siteName}
   </text>
 </svg>`
 }
@@ -261,7 +270,7 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader} &middot; ${siteName}
+    Shared by ${uploader} &#183; ${siteName}
   </text>
 </svg>`
 }

@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const description = `${typeLabel} shared by ${uploader}${hasPassword ? " (Password Protected)" : ""}`
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://linyashare.sknif.de"
     const shareUrl = `${baseUrl}/s/${shareId}`
-    const ogImageUrl = `${baseUrl}/api/og/${shareId}`
+    const ogImageUrl = `${baseUrl}/api/og/${shareId}.png`
 
     // Open Graph Metadata
     const metadata: Metadata = {
