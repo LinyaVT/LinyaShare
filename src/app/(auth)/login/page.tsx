@@ -40,7 +40,11 @@ export default function LoginPage() {
     })
 
     if (result?.error) {
-      setError("Invalid credentials")
+      if (result.code === "TooManyAttempts") {
+        setError("Too many attempts, try again later")
+      } else {
+        setError("Invalid credentials")
+      }
       setLoading(false)
       return
     }
