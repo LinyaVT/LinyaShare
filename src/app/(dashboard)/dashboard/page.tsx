@@ -14,8 +14,8 @@ import type { LucideIcon } from "lucide-react"
 import Header from "@/components/Header"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import Pagination from "@/components/Pagination"
-import { formatSize, formatDate, formatSpeed, formatTime, getFileTypeCategory, isEmbeddableMedia } from "@/lib/utils"
-import { DEFAULT_STORAGE_LIMIT } from "@/lib/constants"
+import { formatSize, formatDate, formatSpeed, formatTime, getFileTypeCategory, isEmbeddableMedia, uuidV4 } from "@/lib/utils"
+import { DEFAULT_STORAGE_LIMIT, CHUNK_SIZE } from "@/lib/constants"
 import MobileFileMenu from "@/components/MobileFileMenu"
 
 // ──────────────────────────────────────────────────────────
@@ -294,9 +294,8 @@ export default function DashboardPage() {
     if (!fileInput?.files?.length) return;
 
     const file = fileInput.files[0];
-    const CHUNK_SIZE = 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const uploadId = crypto.randomUUID();
+    const uploadId = uuidV4();
 
     setUploading(true);
     setUploadTotalBytes(file.size);

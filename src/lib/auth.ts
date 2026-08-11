@@ -16,24 +16,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          })
 
-        if (!user) return null
+          if (!user) return null
 
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        )
+          const passwordMatch = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          )
 
-        if (!passwordMatch) return null
+          if (!passwordMatch) return null
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        } catch (error) {
+          // Log the real error so it is distinguishable from wrong credentials.
+          // NextAuth wraps any throw/return-null in authorize() as "CredentialsSignin".
+          console.error("[auth][authorize] Unexpected error:", error)
+          return null
         }
       },
     }),

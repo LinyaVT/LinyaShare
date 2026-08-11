@@ -166,8 +166,9 @@ Simply enter a `NEXTAUTH_SECRET` -- everything else is pre-configured for plug-a
 | `GIT_BRANCH` | Yes | `main` | Branch to clone and track |
 | `AUTO_UPDATE` | Yes | `false` | Automatically update from GitHub on restart |
 | `NEXTAUTH_SECRET` | Yes | - | JWT encryption key |
-| `NEXT_PUBLIC_APP_URL` | No | Auto-detected | Public URL for share links (leave empty for auto) |
+| `NEXT_PUBLIC_APP_URL` | No | Auto-detected (`http://SERVER_IP:PORT`) | Public URL for share links (leave empty for auto) |
 | `NEXTAUTH_URL` | No | Same as app URL | NextAuth callback URL |
+| `AUTH_TRUST_HOST` | No | `true` | Allows auth when accessed via IP/hostname |
 
 ---
 
@@ -189,9 +190,9 @@ Simply enter a `NEXTAUTH_SECRET` -- everything else is pre-configured for plug-a
 
 ### 1. Automatic IP & Port Detection
 
-The egg automatically detects the server's IP and port from Pterodactyl's environment variables. You don't need to configure these manually.
+The egg reads the server's port (`SERVER_PORT`) and IP (`SERVER_IP`) from Pterodactyl's injected environment variables, so the application always listens on the server's allocation port. No hard-coded port, nothing to configure.
 
-- **Without domain**: Uses `http://SERVER_IP:PORT` automatically
+- **Without domain**: Uses `http://SERVER_IP:PORT` automatically for share links
 - **With domain**: Set `NEXT_PUBLIC_APP_URL=https://your-domain.com`
 
 ### 2. Branch Selection
@@ -222,6 +223,8 @@ Enable automatic updates on server restart:
 | `NEXTAUTH_SECRET not set` | Missing variable | Add secret in egg variables |
 | `Port already in use` | Port conflict | Set custom port in server allocation settings |
 | `Database does not exist` | Setup not run | Check startup command includes `npm run setup` |
+| Login fails, log shows `CredentialsSignin` | Wrong credentials OR DB error | Wrong password → normal. If the log also shows `[auth][authorize] Unexpected error`, the Prisma engine is missing from the standalone build (see below) |
+| `PrismaClientInitializationError` / DB errors after build | Prisma engine not copied to standalone | Already handled by the egg startup script (`cp -rf node_modules/.prisma .next/standalone/node_modules/`) |
 | Installation fails | Git clone error | Check network/firewall settings |
 | Server won't start | Build error | Check installation logs in panel |
 

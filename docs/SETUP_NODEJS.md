@@ -233,7 +233,8 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
-    # Large file uploads
+    # Large file uploads (optional: 512 KB chunks fit below the 1m default,
+    # only needed if you increase CHUNK_SIZE in src/lib/constants.ts)
     client_max_body_size 100g;
     proxy_connect_timeout 300;
     proxy_send_timeout 300;
@@ -471,7 +472,7 @@ echo "*/5 * * * * /usr/local/bin/check-linyashare.sh" | crontab -
 | Symptom | Cause | Solution |
 |---------|-------|----------|
 | `502 Bad Gateway` | App not running | Check `pm2 status` or `systemctl status` |
-| `413 Request Entity Too Large` | nginx limit too low | Increase `client_max_body_size` |
+| `413 Request Entity Too Large` | nginx limit too low | Increase `client_max_body_size` (not needed with the default 512 KB chunks) |
 | `Cannot find module` | Missing dependencies | Run `npm ci --production` |
 | `Port 3000 in use` | Another process | `kill $(lsof -ti:3000)` |
 | `Connection refused` | App not listening | Check `HOSTNAME` and `PORT` |

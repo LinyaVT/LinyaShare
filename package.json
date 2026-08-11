@@ -21,9 +21,6 @@
   "dependencies": {
     "@emotion/is-prop-valid": "^1.4.0",
     "@prisma/client": "^5.22.0",
-    "@uppy/core": "^5.2.0",
-    "@uppy/dashboard": "^5.1.1",
-    "@uppy/xhr-upload": "^5.2.0",
     "bcryptjs": "^2.4.3",
     "busboy": "^1.6.0",
     "framer-motion": "^12.42.2",

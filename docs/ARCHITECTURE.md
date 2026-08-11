@@ -88,7 +88,7 @@ LinyaShare/
 │   ├── README.md              # Documentation index & wiki guide
 │   ├── DEVELOPMENT.md         # Local development guide
 │   ├── ENVIRONMENT.md         # Environment variables reference
-│   ├── CONFIGURATION.md       # Advanced configuration (bodySizeLimit, etc.)
+│   ├── CONFIGURATION.md       # Advanced configuration (chunked uploads, tuning)
 │   ├── DATABASE.md            # Database schema & management
 │   ├── SETUP_DOCKER.md        # Docker deployment guide
 │   ├── SETUP_PTERODACTYL.md   # Pterodactyl/FeatherPanel guide
@@ -136,7 +136,7 @@ See `prisma/schema.prisma` for the full schema. Key models:
 ## Key Design Decisions
 
 1. **SQLite** - Simple file-based database, no external DB server needed
-2. **Chunked Uploads** - Large files are uploaded in 5MB chunks to avoid request limits
+2. **Chunked Uploads** - Large files are uploaded in 512 KB chunks to avoid request limits without any proxy configuration
 3. **Standalone Build** - Next.js `output: 'standalone'` for minimal Docker images
 4. **Streaming** - Files are streamed through the API (no full file buffering in RAM)
 5. **JWT Sessions** - Stateless authentication via NextAuth with JWT strategy

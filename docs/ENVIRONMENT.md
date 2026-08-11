@@ -162,6 +162,9 @@ PORT=3000
 
 The port the application listens on.
 
+> [!TIP]
+> On Pterodactyl/FeatherPanel the egg sets `PORT` automatically from the server allocation (`SERVER_PORT`), so you never need to configure it there.
+
 ### HOSTNAME
 
 | Attribute | Value |

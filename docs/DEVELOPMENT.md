@@ -190,7 +190,7 @@ npx prisma --version                     # Shows Prisma version
 | `Port 3000 already in use` | Kill the process or use a different port |
 | `Database does not exist` | Run `npm run db:push` |
 | `NextAuth secret missing` | Add `NEXTAUTH_SECRET` to `.env` |
-| `Upload fails with 413` | Check `bodySizeLimit` in `next.config.js` |
+| `Upload fails with 413` | Reverse proxy request body limit below 512 KB | Raise `client_max_body_size` or reduce `CHUNK_SIZE` in `src/lib/constants.ts` |
 
 ### Port Already in Use
 

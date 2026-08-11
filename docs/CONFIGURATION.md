@@ -38,11 +38,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
-  },
 }
 
 module.exports = nextConfig
@@ -59,44 +54,43 @@ module.exports = nextConfig
 > [!NOTE]
 > Without `standalone` mode, the entire `node_modules` would need to be present at runtime. Standalone mode copies only the required modules, reducing the Docker image from approximately 500MB to 150MB.
 
-### experimental.serverActions.bodySizeLimit: '10mb'
+### No `bodySizeLimit` needed
 
 | Attribute | Value |
 |-----------|-------|
-| Purpose | Maximum request body size for server actions |
-| Next.js Default | `1mb` |
-| LinyaShare | `10mb` |
+| Setting | Removed |
+| Purpose | Was only relevant for Server Actions |
+| Chunk size | 512 KB |
 
 > [!NOTE]
-> This setting is configured for potential Server Actions usage. **File uploads use API Routes with chunked streaming** (not Server Actions), so actual file transfers bypass this limit entirely.
+> **File uploads use API Routes with chunked streaming**, not Server Actions. `experimental.serverActions.bodySizeLimit` was never applied to uploads, so it has been removed from `next.config.js`. The default Next.js `1mb` Server Action limit remains unchanged.
 
-#### Why 10MB?
+#### Why no config is needed
 
 | Reason | Explanation |
 |--------|-------------|
-| Server Actions support | Provides adequate space if Server Actions are used elsewhere |
-| Safety margin | Small buffer above the 5MB chunk size for headers and metadata |
-| Not for file uploads | Chunked uploads via `/api/upload` use streaming and are not affected by this limit |
+| 512 KB chunks | Each upload request is ~512 KB, well below the nginx default `client_max_body_size 1m` |
+| No proxy tuning | nginx/Caddy/Traefik work out of the box, no `client_max_body_size` change required |
+| API Route streaming | `/api/upload` streams chunk bodies directly to disk, no full-file buffering |
+| Server Actions | Not used for uploads, so `bodySizeLimit` does not matter here |
 
-#### When to Change
+#### Upload limits reference
 
-| Scenario | Recommended Value |
-|----------|------------------|
-| Default (API Route uploads) | `10mb` |
-| Using Server Actions for uploads | Increase to match your needs |
-| Behind nginx with limit | Match nginx `client_max_body_size` |
-| Memory-constrained server | Keep at `10mb` or remove setting |
-| No Server Actions | Remove the setting entirely |
+| Component | Limit | LinyaShare |
+|-----------|-------|------------|
+| Next.js Server Action | `1mb` default | Not used for uploads |
+| nginx `client_max_body_size` | `1m` default | 512 KB chunks fit without changes |
+| Cloudflare (free) | 100 MB | Chunked uploads bypass this entirely |
 
 ```bash
-# Check if your reverse proxy also needs updating:
+# Optional: only needed if you ever increase the chunk size (src/lib/constants.ts)
 # nginx: client_max_body_size 100g; (for chunked API routes)
 # Caddy: Not needed (unlimited by default)
 # Traefik: Not needed (unlimited by default)
 ```
 
 > [!TIP]
-> File uploads in LinyaShare use chunked API Routes (not Server Actions), so you still need to configure your reverse proxy for large file uploads. See the [nginx configuration in SETUP_NODEJS.md](SETUP_NODEJS.md#reverse-proxy-configuration).
+> The chunk size is defined once in `src/lib/constants.ts` (`CHUNK_SIZE`) and imported by the dashboard. Keep it below your reverse proxy's request body limit.
 
 ---
 
@@ -191,17 +185,17 @@ sequenceDiagram
 
     Client->>RP: HTTPS Request
     
-    Note over RP: client_max_body_size<br/>Configure for large chunks
+    Note over RP: Default client_max_body_size<br/>1m is enough (512 KB chunks)
     
     RP->>Next: HTTP Request
     
-    Note over Next: bodySizeLimit: 10mb<br/>For Server Actions only, uploads stream via API
+    Note over Next: No bodySizeLimit config<br/>uploads stream via API Route
     
     alt API Route
         Next->>DB: Prisma Query
         DB-->>Next: Result
     else File Upload
-        Next->>FS: Write chunk (5MB)
+        Next->>FS: Write chunk (512 KB)
         FS-->>Next: Confirmation
     else File Download
         Next->>FS: Stream file
@@ -220,8 +214,8 @@ sequenceDiagram
 
 | Setting | Default | Tuning Notes |
 |---------|---------|--------------|
-| `bodySizeLimit` | `10mb` | Sufficient for Server Actions, uploads use API routes |
-| Chunk size | 5MB | Hard-coded in `src/lib/constants.ts` |
+| `bodySizeLimit` | Removed | Not needed, uploads use API Routes |
+| Chunk size | 512 KB | Defined in `src/lib/constants.ts` |
 | Max particles | 400 | Auto-scaled in `AnimatedBackground.tsx` |
 
 ### Database
@@ -235,9 +229,9 @@ sequenceDiagram
 
 | Component | Setting | Recommendation |
 |-----------|---------|---------------|
-| nginx `client_max_body_size` | `1m` | Set to `100g` for large uploads |
+| nginx `client_max_body_size` | `1m` | No change needed (512 KB chunks fit below the default) |
 | nginx `proxy_read_timeout` | `60s` | Set to `300s` for slow connections |
-| Cloudflare | 100MB limit | Use chunked uploads to bypass |
+| Cloudflare | 100MB limit | Chunked uploads bypass this entirely |
 
 ---
 

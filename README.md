@@ -22,7 +22,7 @@
 | Wiki | [docs/README.md](docs/README.md) | Documentation index and management guide |
 | Development | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local dev setup, Prisma Studio, debugging |
 | Environment | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) | All environment variables and .env setup |
-| Configuration | [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | bodySizeLimit, nginx tuning, performance |
+| Configuration | [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Chunked uploads, performance, zero-config notes |
 | Database | [docs/DATABASE.md](docs/DATABASE.md) | Schema, ER diagram, migrations, SQLite |
 | Docker | [docs/SETUP_DOCKER.md](docs/SETUP_DOCKER.md) | Docker Compose deployment guide |
 | Pterodactyl | [docs/SETUP_PTERODACTYL.md](docs/SETUP_PTERODACTYL.md) | Panel egg, Wings PID fix |
@@ -54,7 +54,7 @@ Open **http://localhost:3000** -- the setup wizard will guide you through admin 
 | Feature | Description |
 |---------|-------------|
 | Password Protection | Optional password on every shared file |
-| Chunked Uploads | Large files uploaded in 5MB chunks |
+| Chunked Uploads | Large files uploaded in 512 KB chunks |
 | Media Embedding | Auto-generated URLs for Discord, Twitter embeds |
 | Download Tracking | See download counts for each file |
 | Admin Panel | User management, file imports, global settings |
