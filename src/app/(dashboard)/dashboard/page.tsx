@@ -234,9 +234,8 @@ export default function DashboardPage() {
   const [estimatedTime, setEstimatedTime] = useState(0)
   const uploadedBytesRef = useRef(0)
   const totalBytesRef = useRef(0)
-  const smoothedSpeedRef = useRef(0)
-  const lastTickRef = useRef(0)
-  const lastTickBytesRef = useRef(0)
+  const speedSamplesRef = useRef<{ time: number; bytes: number }[]>([])
+  const uploadStartRef = useRef(0)
   const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const loadFiles = useCallback(async () => {
@@ -263,7 +262,7 @@ export default function DashboardPage() {
     setCurrentPage(1)
   }, [searchQuery, filterType, fileTypeFilter])
 
-  // ── Speed & ETA Calculation (ref-based ticker, EMA-smoothed) ──
+  // ── Speed & ETA Calculation (windowed, wall-clock based) ──
   const stopUploadTicker = useCallback(() => {
     if (tickerRef.current) {
       clearInterval(tickerRef.current)
@@ -277,9 +276,8 @@ export default function DashboardPage() {
     stopUploadTicker()
     totalBytesRef.current = totalBytes
     uploadedBytesRef.current = 0
-    smoothedSpeedRef.current = 0
-    lastTickRef.current = Date.now()
-    lastTickBytesRef.current = 0
+    speedSamplesRef.current = [{ time: Date.now(), bytes: 0 }]
+    uploadStartRef.current = Date.now()
 
     setUploadTotalBytes(totalBytes)
     setUploadedBytes(0)
@@ -289,19 +287,28 @@ export default function DashboardPage() {
 
     tickerRef.current = setInterval(() => {
       const now = Date.now()
-      const dt = (now - lastTickRef.current) / 1000
       const bytesNow = uploadedBytesRef.current
-      const bytesDelta = bytesNow - lastTickBytesRef.current
       const total = totalBytesRef.current
       const percent = total > 0 ? Math.round((bytesNow / total) * 100) : 0
 
-      const instantSpeed = dt > 0 ? bytesDelta / dt : 0
-      smoothedSpeedRef.current =
-        smoothedSpeedRef.current > 0
-          ? smoothedSpeedRef.current * 0.7 + instantSpeed * 0.3
-          : instantSpeed
+      // Nur Samples der letzten 5 Sekunden behalten (wandert mit der Zeit,
+      // dadurch fällt der Speed während Stillstand auch real ab)
+      const cutoff = now - 5000
+      while (speedSamplesRef.current.length > 1 && speedSamplesRef.current[0].time < cutoff) {
+        speedSamplesRef.current.shift()
+      }
+      const first = speedSamplesRef.current[0]
+      const windowSecs = (now - first.time) / 1000
+      const windowSpeed = windowSecs > 0 ? (bytesNow - first.bytes) / windowSecs : 0
 
-      const speed = smoothedSpeedRef.current
+      // Fallback: Durchschnitts-Speed seit Upload-Start.
+      // Verhindert, dass die ETA bei einem einzelnen langsam übertragenen Chunk
+      // auf "—" springt, und bleibt damit immer eine sinnvolle Schätzung.
+      const elapsed = (now - uploadStartRef.current) / 1000
+      const avgSpeed = elapsed > 0 ? bytesNow / elapsed : 0
+
+      const speed = windowSpeed > 0 ? windowSpeed : avgSpeed
+
       const remaining = total - bytesNow
       const eta = speed > 0 && remaining > 0 ? remaining / speed : 0
 
@@ -309,9 +316,6 @@ export default function DashboardPage() {
       setUploadPercent(percent)
       setUploadSpeed(speed)
       setEstimatedTime(eta)
-
-      lastTickRef.current = now
-      lastTickBytesRef.current = bytesNow
 
       if (total > 0 && bytesNow >= total) {
         stopUploadTicker()
@@ -365,6 +369,7 @@ export default function DashboardPage() {
         }
 
         uploadedBytesRef.current = end;
+        speedSamplesRef.current.push({ time: Date.now(), bytes: end });
       }
 
       setUploadProgress("Upload successful!");

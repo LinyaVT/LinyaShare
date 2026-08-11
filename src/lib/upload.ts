@@ -121,7 +121,7 @@ export async function finalizeUserUpload(
 
   const shareId = uuidv4();
   const isMedia = isSupportedMediaType(mimeType, originalName);
-  const embedUrl = isMedia ? generateEmbedUrl(shareId) : null;
+  const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
   return await prisma.file.create({
     data: {
@@ -165,7 +165,7 @@ export async function finalizeImportUpload(
 
   const shareId = uuidv4();
   const isMedia = isSupportedMediaType(mimeType, originalName);
-  const embedUrl = isMedia ? generateEmbedUrl(shareId) : null;
+  const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
   return await prisma.file.create({
     data: {
@@ -215,7 +215,7 @@ export async function claimFile(fileId: string, userId: string) {
 
   // Check if file is a media type and update embed URL
   const isMedia = isSupportedMediaType(file.type, file.originalName)
-  const embedUrl = isMedia && !file.embedUrl ? generateEmbedUrl(file.shareId) : file.embedUrl || null
+  const embedUrl = isMedia && !file.embedUrl ? generateEmbedUrl(file.shareId, file.originalName) : file.embedUrl || null
 
   return await prisma.file.update({
     where: { id: fileId },
@@ -263,7 +263,7 @@ export async function claimOrphanedFile(fileName: string, userId: string) {
   
   const mimeType = getMimeTypeFromExtension(ext)
   const isMedia = isSupportedMediaType(mimeType, safeName)
-  const embedUrl = isMedia ? generateEmbedUrl(shareId) : null
+  const embedUrl = isMedia ? generateEmbedUrl(shareId, safeName) : null
 
   return await prisma.file.create({
     data: {

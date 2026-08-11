@@ -70,18 +70,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!hasPassword) {
       const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|avi|mov|mkv|wmv)$/i.test(fileName)
       const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(fileName)
-      
+
+      // Direkter Media-Link (endet auf die Dateiendung) – so erkennen Discord & Co.
+      // die Datei als Video/Audio und zeigen einen Player an.
+      const mediaUrl = `${baseUrl}/api/files/embed/${shareId}/${encodeURIComponent(fileName)}`
+
       if (isVideo) {
         metadata.openGraph = {
           ...metadata.openGraph,
           type: "video.other",
-          videos: [shareUrl],
+          videos: [{
+            url: mediaUrl,
+            secureUrl: mediaUrl,
+            type: fileType || "video/mp4",
+          }],
         }
       } else if (isAudio) {
         metadata.openGraph = {
           ...metadata.openGraph,
           type: "music.song",
-          audio: shareUrl,
+          audio: [{
+            url: mediaUrl,
+            secureUrl: mediaUrl,
+            type: fileType || "audio/mpeg",
+          }],
         }
       }
     }

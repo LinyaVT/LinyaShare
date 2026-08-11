@@ -49,7 +49,7 @@ This system automatically generates embeddable URLs for media files (video, audi
 ```
 User uploads file -> finalizeUserUpload()
   -> Check if media type (video/audio/image)
-  -> If yes: Generate embed URL (/api/files/embed/{shareId})
+  -> If yes: Generate embed URL (/api/files/embed/{shareId}/{filename})
   -> Save to DB (embedUrl + isMediaEmbed)
   -> Status: ACTIVE
 ```
@@ -84,16 +84,22 @@ Admin assigns file -> claimFile() or claimOrphanedFile()
 | `src/lib/embed-generator.ts` | Helper functions for embeds |
 | `src/lib/upload.ts` | Embed logic in all finalize functions |
 | `src/app/api/files/route.ts` | API: embedUrl field in response |
-| `src/app/api/files/embed/[shareId]/route.ts` | Embed endpoint with OG headers |
+| `src/app/api/files/embed/[shareId]/[filename]/route.ts` | Embed endpoint (direct link with file extension) |
+| `src/app/api/files/embed/[shareId]/route.ts` | Redirects to the direct link above (backwards compatible) |
 | `src/app/(dashboard)/dashboard/page.tsx` | Embed link display in list and grid views |
 
 ---
 
 ## API Endpoints
 
-### GET /api/files/embed/{shareId}
+### GET /api/files/embed/{shareId}/{filename}
 
-Returns the media file with Open Graph headers for rich embeds.
+Returns the media file as a **direct link** that ends with the file extension
+(e.g. `…/embed/{shareId}/my-video.mp4`). Discord & Co. only render media embeds
+for URLs whose path ends with a known file extension, so this URL format is required.
+
+`GET /api/files/embed/{shareId}` (without filename) is kept for backwards compatibility
+and responds with a `308` redirect to the filename variant.
 
 | Header | Value |
 |--------|-------|
@@ -101,9 +107,7 @@ Returns the media file with Open Graph headers for rich embeds.
 | `Content-Disposition` | `inline` (always, never attachment) |
 | `Accept-Ranges` | `bytes` (for streaming) |
 | `Cache-Control` | `public, max-age=3600` |
-| `og:type` | `video.other` / `music.song` / `image` |
-| `og:video` / `og:audio` / `og:image` | Stream URL |
-| `og:title` | Filename |
+| `Access-Control-Allow-Origin` | `*` |
 
 | Feature | Description |
 |---------|-------------|
@@ -149,10 +153,10 @@ The embed URL is automatically generated during:
 ### Format
 
 ```
-{Origin}/api/files/embed/{shareId}
+{Origin}/api/files/embed/{shareId}/{encoded-filename}
 
 Example:
-https://linyashare.com/api/files/embed/a1b2c3d4-e5f6-...
+https://linyashare.com/api/files/embed/a1b2c3d4-e5f6-.../my-video.mp4
 ```
 
 ---
@@ -185,6 +189,11 @@ https://linyashare.com/api/files/embed/a1b2c3d4-e5f6-...
 | Discord test | Upload media file, copy embed link, paste on Discord | Rich player/preview appears |
 | Password test | Upload file with password, access embed link | 401 error (no access without password) |
 | Performance test | Upload large video (1GB+), access embed link | Works without RAM overhead (streaming) |
+| Legacy link test | Paste old `…/embed/{shareId}` link | 308 redirect to `…/embed/{shareId}/{filename}` |
+
+> **Note:** Discord only embeds videos as an inline player for **MP4 / WebM / MOV**
+> files and caps external video link embeds at roughly **50 MiB**. Larger or other
+> formats may only show a generic link / thumbnail.
 
 ---
 

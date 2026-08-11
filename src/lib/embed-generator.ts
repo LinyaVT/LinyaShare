@@ -30,9 +30,12 @@ export function getMediaCategory(mimeType: string, fileName: string): "video" | 
   return null
 }
 
-export function generateEmbedUrl(shareId: string, baseUrl?: string): string {
+export function generateEmbedUrl(shareId: string, filename?: string, baseUrl?: string): string {
   const origin = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-  return `${origin}/api/files/embed/${shareId}`
+  // Dateiname anhängen, damit die URL mit der Dateiendung endet
+  // (Discord & Co. erkennen Media-Dateien nur an solchen "direkten" Links).
+  const name = filename ? `/${encodeURIComponent(filename)}` : ""
+  return `${origin}/api/files/embed/${shareId}${name}`
 }
 
 export interface EmbedMeta {
@@ -54,7 +57,7 @@ export function generateEmbedMeta(
 
   const origin = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   const streamUrl = `${origin}/api/files/stream/${shareId}`
-  const embedUrl = generateEmbedUrl(shareId, origin)
+  const embedUrl = generateEmbedUrl(shareId, fileName, origin)
 
   let ogType: string
   switch (category) {

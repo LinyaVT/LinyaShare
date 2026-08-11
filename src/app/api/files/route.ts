@@ -28,14 +28,23 @@ export async function GET() {
     },
   })
 
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+
   return NextResponse.json({
-    files: files.map((f) => ({
-      ...f,
-      hasPassword: !!f.password,
-      password: f.plainPassword || undefined,
-      shareUrl: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/s/${f.shareId}`,
-      embedUrl: f.password ? undefined : (f.embedUrl || undefined),
-    })),
+    files: files.map((f) => {
+      // Direkter Media-Link mit Dateiendung (endet auf .mp4 etc.) für Discord & Co.
+      const embedUrl = f.isMediaEmbed && !f.password
+        ? `${baseUrl}/api/files/embed/${f.shareId}/${encodeURIComponent(f.originalName)}`
+        : undefined
+
+      return {
+        ...f,
+        hasPassword: !!f.password,
+        password: f.plainPassword || undefined,
+        shareUrl: `${baseUrl}/s/${f.shareId}`,
+        embedUrl,
+      }
+    }),
   })
 }
 
