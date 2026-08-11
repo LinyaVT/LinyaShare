@@ -42,6 +42,11 @@ export default async function RootLayout({
   return (
     <html lang="en" {...dataAttrs}>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("linyashare-theme")==="light"){document.documentElement.dataset.theme="light"}}catch(e){}`,
+          }}
+        />
         <style>{`:root{${themeStyle}}`}</style>
         {fontUrls.map((url) => (
           <link key={url} rel="stylesheet" href={url} />

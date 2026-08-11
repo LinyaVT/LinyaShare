@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Settings, Shield, LogOut, Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import ThemeToggle from "@/components/ThemeToggle"
 
 interface HeaderProps {
   title?: string
@@ -93,6 +94,7 @@ export default function Header({ title = "LinyaShare", showAdminNav = false, adm
 
           {/* Right: Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
+            <ThemeToggle />
             {isAuthenticated ? (
               <>
                 {showHomeLink && (
@@ -143,6 +145,12 @@ export default function Header({ title = "LinyaShare", showAdminNav = false, adm
             className="overflow-hidden border-t border-dark-600/15 md:hidden"
           >
             <div className="px-4 py-4 space-y-2 bg-dark-800/40 backdrop-blur-2xl">
+              {/* Theme Toggle */}
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-sm text-dark-300">Theme</span>
+                <ThemeToggle />
+              </div>
+
               {/* Admin Navigation */}
               {showAdminNav && (
                 <div className="space-y-1 pb-3 border-b border-dark-600/20">

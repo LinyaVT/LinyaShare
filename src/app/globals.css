@@ -30,6 +30,86 @@
 
   --font-body: 'Inter', sans-serif;
   --font-heading: 'Orbitron', sans-serif;
+
+  /* `white` als Variable (text-white, hover:text-white, text-white/80, border-white …)
+     → kann im Light-Mode zu dunkler "Schriftfarbe" werden */
+  --color-white: 255 255 255;
+
+  /* Dark palette (Tailwind `dark-*`), default = dunkles Theme */
+  --dark-50: 248 250 252;
+  --dark-100: 241 245 249;
+  --dark-200: 226 232 240;
+  --dark-300: 203 213 225;
+  --dark-400: 148 163 184;
+  --dark-500: 100 116 139;
+  --dark-600: 71 85 105;
+  --dark-700: 30 30 46;
+  --dark-800: 17 17 26;
+  --dark-900: 10 10 15;
+}
+
+/* ──────────────────────────────────────────────────────────
+   LIGHT MODE ("White Mode")
+   data-theme="light" auf <html> geschaltet durch den
+   ThemeToggle (Header). Höhere Spezifität als :root → gewinnt
+   auch gegen das serverseitig injizierte `:root{…}`.
+   ────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  /* Invertierte Grauskala: helle Flächen, dunkle Texte */
+  --dark-50: 15 23 42;
+  --dark-100: 15 23 42;
+  --dark-200: 30 41 59;
+  --dark-300: 51 65 85;
+  --dark-400: 100 116 139;
+  --dark-500: 148 163 184;
+  --dark-600: 226 232 240;
+  --dark-700: 241 245 249;
+  --dark-800: 255 255 255;
+  --dark-900: 241 245 249;
+
+  /* !important: gewinnt auch gegen die Inline-CSS-Variablen, die die
+     Live-Vorschau der Admin-Settings auf <html> schreibt */
+  --background-color: #f1f5f9 !important;
+  --background-image: none !important;
+  --background-attachment: scroll !important;
+  --particle-color: 100 116 139 !important;
+
+  /* Weiß wird im Light-Mode zu dunkler Schriftfarbe (deckt auch
+     hover:text-white, text-white/80, border-white, Spinner usw. ab) */
+  --color-white: 15 23 42;
+}
+
+/* Ausnahme 1: Buttons auf Farbverlauf behalten weiße Schrift */
+[data-theme="light"] .btn-primary {
+  color: #ffffff;
+}
+
+/* Ausnahme 2: Weiße Schrift auf vollfarbigen Flächen bleibt weiß */
+[data-theme="light"] :is(
+  .bg-primary-500, .bg-primary-600,
+  .bg-green-500, .bg-red-500, .bg-amber-500, .bg-yellow-500,
+  .bg-blue-500, .bg-indigo-500, .bg-pink-500, .bg-purple-500,
+  .bg-emerald-500, .bg-orange-500, .bg-cyan-500, .bg-teal-500
+) {
+  --color-white: 255 255 255;
+}
+
+/* Status-Farben im Light-Mode einen Tick dunkler → bessere Kontraste */
+[data-theme="light"] .text-red-400 { color: #dc2626; }
+[data-theme="light"] .text-green-400 { color: #16a34a; }
+[data-theme="light"] .text-yellow-400 { color: #ca8a04; }
+[data-theme="light"] .text-amber-400 { color: #d97706; }
+[data-theme="light"] .text-blue-400 { color: #2563eb; }
+
+/* Glass-Karten im Light-Mode etwas dichter, damit sie nicht in der Fläche verschwinden */
+[data-theme="light"] .glass-card {
+  background-color: rgb(255 255 255 / 0.65);
+  border-color: rgb(226 232 240 / 0.9);
+  box-shadow: 0 8px 30px rgb(15 23 42 / 0.06);
+}
+
+[data-theme="light"][data-header-style="solid"] header {
+  background-color: #ffffff;
 }
 
 @layer base {
@@ -185,6 +265,23 @@
   animation: spin 0.8s linear infinite;
 }
 
+/* Light-Mode scrollbar & spinner */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+[data-theme="light"] .loading-spinner {
+  border-color: #e2e8f0;
+}
+
 /* Markdown content styles */
 .markdown-content h1:first-child {
   margin-top: 0;
@@ -223,4 +320,8 @@
 
 .markdown-content pre::-webkit-scrollbar-track {
   background: transparent;
+}
+
+[data-theme="light"] .markdown-content pre::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
 }
