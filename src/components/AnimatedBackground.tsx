@@ -17,6 +17,7 @@ interface Particle {
   alpha: number
   phase: number
   speed: number
+  glow: number
 }
 
 interface RGB {
@@ -26,24 +27,35 @@ interface RGB {
 }
 
 // ──────────────────────────────────────────────────────────
-// TRANSFER TYPE ("file being sent between two connected nodes")
-// a / b reference live particle indices, so the transfer moves with them
+// TOKEN TYPE ("a file being handed from person to person")
+// `at` references a live particle index, so the packet moves with them.
+// The holder glows; after a short hold it passes the packet on to a
+// connected neighbour, dims, and the receiver starts to glow.
 // ──────────────────────────────────────────────────────────
-interface Packet {
-  a: number
-  b: number
-  t: number
+interface Token {
+  at: number
+  prev: number
   holdT: number
-  fadeT: number
-  pulseT: number
+  state: "hold" | "send" | "dissolve"
+  target: number
+  sendT: number
+  dissolveT: number
+  lifetime: number
   speed: number
-  width: number
-  spawnPulse: number
 }
 
-// Maximum distance a connected pair may drift apart before the transfer ends.
-// Keeps connection lines short and on screen.
+// Number of packets hopping through the network at the same time
+const TOKEN_COUNT = 6
+// How far apart two particles must be to be considered "connected"
+const CONNECT_DIST = 150
+// Maximum length a send connection may reach before it aborts
 const MAX_TRANSFER_DIST = 180
+// How long a node holds the packet before passing it on
+const HOLD_DUR = 1.6
+// How long a packet lives before it dissolves (a new one then spawns elsewhere)
+const TOKEN_LIFETIME = 10
+// How long the fade-out / dissolve effect lasts
+const DISSOLVE_DUR = 1.1
 
 // ──────────────────────────────────────────────────────────
 // ANIMATED BACKGROUND COMPONENT
@@ -51,7 +63,7 @@ const MAX_TRANSFER_DIST = 180
 export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
-  const packetsRef = useRef<Packet[]>([])
+  const tokensRef = useRef<Token[]>([])
   const mouseRef = useRef({ x: -9999, y: -9999 })
   const animationIdRef = useRef<number>(0)
   const timeRef = useRef<number>(0)
@@ -98,10 +110,32 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
         alpha: 0.06 + Math.random() * 0.16,
         phase: Math.random() * Math.PI * 2,
         speed: 0.15 + Math.random() * 0.45,
+        glow: 0,
       })
     }
     particlesRef.current = particles
-    packetsRef.current = []
+
+    // Give the first TOKEN_COUNT particles a packet at random -> they glow.
+    const n = Math.min(TOKEN_COUNT, particles.length)
+    const indices = new Set<number>()
+    while (indices.size < n) {
+      indices.add(Math.floor(Math.random() * particles.length))
+    }
+    const tokens: Token[] = []
+    for (const idx of indices) {
+      tokens.push({
+        at: idx,
+        prev: -1,
+        holdT: Math.random() * HOLD_DUR * 0.5,
+        state: "hold",
+        target: -1,
+        sendT: 0,
+        dissolveT: 0,
+        lifetime: Math.random() * TOKEN_LIFETIME * 0.4,
+        speed: 60 + Math.random() * 80,
+      })
+    }
+    tokensRef.current = tokens
   }, [])
 
   const draw = useCallback(() => {
@@ -118,7 +152,7 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
     ctx.clearRect(0, 0, width, height)
 
     const particles = particlesRef.current
-    const packets = packetsRef.current
+    const tokens = tokensRef.current
     const mouse = mouseRef.current
     const now = Date.now()
     timeRef.current = now
@@ -135,54 +169,78 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
       return 0.45 + 0.55 * safe
     }
 
-    // ── Frame delta (for packet movement) ──
+    // ── Frame delta ──
     const dt = Math.min(now - lastTimeRef.current || 16, 100)
     lastTimeRef.current = now
 
-    // ── Spawn a transfer between two connected nodes ──
-    // When two particles are close ("found each other"), they start a transfer.
-    // The pair stays connected (live) until the transfer has finished.
-    const spawnTransfer = (): Packet | null => {
-      if (particles.length < 2) return null
-      const aIdx = Math.floor(Math.random() * particles.length)
-      let bIdx = -1
+    // Shortest wrapped distance between two points (keeps lines short and on
+    // screen, even when a particle wraps around an edge).
+    const wrappedDelta = (x1: number, y1: number, x2: number, y2: number) => {
+      let dx = x2 - x1
+      let dy = y2 - y1
+      if (dx > width / 2) dx -= width
+      else if (dx < -width / 2) dx += width
+      if (dy > height / 2) dy -= height
+      else if (dy < -height / 2) dy += height
+      return { dx, dy, dist: Math.hypot(dx, dy) }
+    }
+
+    // Pick the next connected neighbour to pass the packet to.
+    // Avoids the previous sender (no ping-pong) and any node that is already
+    // holding or receiving another packet; falls back to any connected node.
+    const pickTarget = (tk: Token): number => {
+      const A = particles[tk.at]
+      if (!A) return -1
+      const busy = new Set<number>()
+      for (const o of tokens) {
+        busy.add(o.at)
+        if (o.state === "send" && o.target >= 0) busy.add(o.target)
+      }
+
+      let bestIdx = -1
       let bestD2 = Infinity
       for (let j = 0; j < particles.length; j++) {
-        if (j === aIdx) continue
-        const dx = particles[aIdx].x - particles[j].x
-        const dy = particles[aIdx].y - particles[j].y
-        const d2 = dx * dx + dy * dy
-        if (d2 < bestD2) {
-          bestD2 = d2
-          bIdx = j
+        if (j === tk.at || busy.has(j) || j === tk.prev) continue
+        const { dist } = wrappedDelta(A.x, A.y, particles[j].x, particles[j].y)
+        if (dist > CONNECT_DIST) continue
+        if (dist < bestD2) {
+          bestD2 = dist
+          bestIdx = j
         }
       }
-      if (bIdx < 0 || bestD2 > 150 * 150) return null
-      // don't start a second transfer on the same pair
-      for (const pk of packets) {
-        if ((pk.a === aIdx && pk.b === bIdx) || (pk.a === bIdx && pk.b === aIdx)) return null
+      if (bestIdx >= 0) return bestIdx
+
+      // Fallback: ignore the "previous sender" rule to avoid stalls.
+      let fallbackIdx = -1
+      let fallbackD2 = Infinity
+      for (let j = 0; j < particles.length; j++) {
+        if (j === tk.at || busy.has(j)) continue
+        const { dist } = wrappedDelta(A.x, A.y, particles[j].x, particles[j].y)
+        if (dist > CONNECT_DIST) continue
+        if (dist < fallbackD2) {
+          fallbackD2 = dist
+          fallbackIdx = j
+        }
       }
-      return {
-        a: aIdx,
-        b: bIdx,
-        t: 0,
-        holdT: 0,
-        fadeT: -1,
-        pulseT: -1,
-        speed: 55 + Math.random() * 80,
-        width: 2 + Math.random() * 0.8,
-        spawnPulse: 0,
-      }
+      return fallbackIdx
     }
 
-    if (packets.length < 5 && Math.random() < 0.04) {
-      const transfer = spawnTransfer()
-      if (transfer) packets.push(transfer)
+    // Pick a random free node where a dissolved packet reappears.
+    const pickSpawn = (tk: Token): number => {
+      const busy = new Set<number>()
+      for (const o of tokens) {
+        busy.add(o.at)
+        if (o.state === "send" && o.target >= 0) busy.add(o.target)
+      }
+      const free: number[] = []
+      for (let j = 0; j < particles.length; j++) {
+        if (j === tk.at || busy.has(j)) continue
+        free.push(j)
+      }
+      if (free.length === 0) return tk.at
+      return free[Math.floor(Math.random() * free.length)]
     }
 
-    // ── Update & Draw Transfers ──
-    // The two nodes stay connected while the transfer runs; positions are read
-    // live from the particles every frame, so everything moves together.
     const dashFlow = now * 0.001 * 26
     const drawDash = (
       x1: number, y1: number, x2: number, y2: number,
@@ -210,99 +268,119 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
       ctx.stroke()
     }
 
-    for (let k = packets.length - 1; k >= 0; k--) {
-      const pk = packets[k]
-      const pa = particles[pk.a]
-      const pb = particles[pk.b]
-      if (!pa || !pb) {
-        packets.splice(k, 1)
+    // ── Update & Draw Tokens (packets hopping through the network) ──
+    for (const tk of tokens) {
+      const A = particles[tk.at]
+      if (!A) continue
+      const ax = A.x
+      const ay = A.y
+      const dimA = centerDim(ax, ay)
+
+      // ── Dissolving: the packet fades out, then a new one spawns elsewhere ──
+      if (tk.state === "dissolve") {
+        tk.dissolveT += dt / 1000
+        const p = Math.min(tk.dissolveT / DISSOLVE_DUR, 1)
+        const fade = 1 - p
+
+        ctx.beginPath()
+        ctx.arc(ax, ay, 6 + p * 20, 0, Math.PI * 2)
+        ctx.lineWidth = 1.5
+        ctx.strokeStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${fade * 0.6 * dimA})`
+        ctx.stroke()
+
+        if (fade > 0) {
+          ctx.beginPath()
+          ctx.arc(ax, ay, 15 * fade, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${fade * 0.12 * dimA})`
+          ctx.fill()
+        }
+
+        if (p >= 1) {
+          const idx = pickSpawn(tk)
+          tk.at = idx
+          tk.prev = -1
+          tk.holdT = Math.random() * HOLD_DUR * 0.5
+          tk.state = "hold"
+          tk.target = -1
+          tk.sendT = 0
+          tk.dissolveT = 0
+          tk.lifetime = 0
+        }
         continue
       }
-      const ax = pa.x
-      const ay = pa.y
-      const bx = pb.x
-      const by = pb.y
 
-      // Shortest wrapped distance between the two nodes. Using the wrapped
-      // vector keeps lines short and never crossing the whole screen, even
-      // when a particle wraps around an edge.
-      let dx = bx - ax
-      let dy = by - ay
-      if (dx > width / 2) dx -= width
-      else if (dx < -width / 2) dx += width
-      if (dy > height / 2) dy -= height
-      else if (dy < -height / 2) dy += height
-      const dist = Math.hypot(dx, dy)
-      const ex = ax + dx
-      const ey = ay + dy
-
-      const dimA = centerDim(ax, ay)
-      const dimB = centerDim(ex, ey)
-      const dimAvg = (dimA + dimB) / 2
-
-      // Limit: if the pair drifts too far apart, end the connection before
-      // the line gets too long.
-      if (dist > MAX_TRANSFER_DIST && pk.fadeT < 0) pk.fadeT = 0
-
-      // Start pulse at the sender ("transfer begins")
-      if (pk.spawnPulse < 1) {
-        pk.spawnPulse += (dt / 1000) / 0.45
-        const p = Math.min(pk.spawnPulse, 1)
-        ctx.beginPath()
-        ctx.arc(ax, ay, p * 26, 0, Math.PI * 2)
-        ctx.lineWidth = 1.5
-        ctx.strokeStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${(1 - p) * 0.5 * dimA})`
-        ctx.stroke()
+      // Lifetime: after a while the packet dissolves instead of hopping forever.
+      tk.lifetime += dt / 1000
+      if (tk.lifetime >= TOKEN_LIFETIME) {
+        tk.state = "dissolve"
+        tk.dissolveT = 0
+        continue
       }
 
-      // Arrival pulse at the receiver ("received")
-      if (pk.pulseT >= 0) {
-        pk.pulseT += (dt / 1000) / 0.5
-        const p = Math.min(pk.pulseT, 1)
-        ctx.beginPath()
-        ctx.arc(ex, ey, p * 28, 0, Math.PI * 2)
-        ctx.lineWidth = 2
-        ctx.strokeStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${(1 - p) * 0.6 * dimB})`
-        ctx.stroke()
-      }
-
-      if (pk.fadeT >= 0) {
-        // Finishing: the connection retracts from the sender side toward the
-        // receiver, then the pair separates.
-        pk.fadeT += (dt / 1000) / 0.6
-        const f = Math.min(pk.fadeT, 1)
-        const sx = ax + dx * f
-        const sy = ay + dy * f
-        if (sx !== ex || sy !== ey) {
-          drawConnection(sx, sy, ex, ey, 0.5 * dimB)
-          drawDash(sx, sy, ex, ey, 0.75 * dimB, pk.width)
+      if (tk.state === "hold") {
+        tk.holdT += dt / 1000
+        if (tk.holdT >= HOLD_DUR) {
+          const target = pickTarget(tk)
+          if (target >= 0) {
+            tk.state = "send"
+            tk.target = target
+            tk.sendT = 0
+          } else {
+            // no free neighbour right now -> keep holding, retry next frame
+            tk.holdT = HOLD_DUR * 0.9
+          }
         }
-        if (pk.fadeT >= 1) {
-          packets.splice(k, 1)
+      } else {
+        const B = particles[tk.target]
+        if (!B) {
+          tk.state = "hold"
+          tk.holdT = 0
           continue
         }
-      } else if (pk.t < 1) {
-        // Sending: the pair is strongly connected, the dashed line grows from
-        // the sender toward the receiver (both moving together).
-        const len = dist || 1
-        pk.t += ((dt / 1000) * pk.speed) / len
-        if (pk.t >= 1) {
-          pk.t = 1
-          pk.holdT = 0
-          pk.pulseT = 0
+        const { dx, dy, dist } = wrappedDelta(ax, ay, B.x, B.y)
+        const ex = ax + dx
+        const ey = ay + dy
+        const dimAvg = (dimA + centerDim(ex, ey)) / 2
+
+        // Abort the send if the receiver drifted too far -> pick another target
+        if (dist > MAX_TRANSFER_DIST) {
+          const target = pickTarget(tk)
+          if (target >= 0) {
+            tk.target = target
+            tk.sendT = 0
+          } else {
+            tk.state = "hold"
+            tk.holdT = HOLD_DUR * 0.9
+          }
+          continue
         }
-        const tx = ax + dx * pk.t
-        const ty = ay + dy * pk.t
+
+        const len = dist || 1
+        tk.sendT += ((dt / 1000) * tk.speed) / len
+        if (tk.sendT >= 1) {
+          // Arrival: the receiver takes over the packet, the sender dims.
+          const sender = tk.at
+          tk.at = tk.target
+          tk.prev = sender
+          tk.state = "hold"
+          tk.holdT = 0
+          tk.target = -1
+          tk.sendT = 0
+          continue
+        }
+
+        const tx = ax + dx * tk.sendT
+        const ty = ay + dy * tk.sendT
         drawConnection(ax, ay, ex, ey, 0.35 * dimAvg)
-        drawDash(ax, ay, tx, ty, 0.75 * dimA, pk.width)
-      } else {
-        // Arrived: the full connection stays visible for a short hold, then the
-        // transfer finishes and the pair separates.
-        pk.holdT += dt / 1000
-        drawConnection(ax, ay, ex, ey, 0.35 * dimAvg)
-        drawDash(ax, ay, ex, ey, 0.75 * dimAvg, pk.width)
-        if (pk.holdT >= 0.35) pk.fadeT = 0
+        drawDash(ax, ay, tx, ty, 0.75 * dimA, 2.2)
       }
+    }
+
+    const holders = new Set<number>()
+    for (const tk of tokens) {
+      // A dissolving packet has left the node -> it stops glowing while fading.
+      if (tk.state === "dissolve") continue
+      holders.add(tk.at)
     }
 
     // ── Update & Draw Particles ──
@@ -345,16 +423,41 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
       }
 
       const dim = centerDim(p.x, p.y)
-      const alpha = p.alpha * dim
+
+      // Smooth brightness: eases towards 1 while the node holds a packet and
+      // back to 0 after it hands it on, so the giver dims and the receiver
+      // brightens gently instead of switching instantly.
+      const targetGlow = holders.has(i) ? 1 : 0
+      p.glow += (targetGlow - p.glow) * Math.min(1, (dt / 1000) * 4)
+      const glow = p.glow
+
+      const alpha = p.alpha * dim * (1 + glow * 0.8)
+      const coreSize = p.size * (1 + glow * 0.7)
 
       // Draw particle
       ctx.beginPath()
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+      ctx.arc(p.x, p.y, coreSize, 0, Math.PI * 2)
       ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${alpha})`
       ctx.fill()
 
-      // Leichter Glow um grössere Partikel
-      if (p.size > 3) {
+      if (glow > 0.02) {
+        // Soft halo + static ring around the node currently holding a packet
+        const haloR = 11 + glow * 3
+        const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, haloR)
+        halo.addColorStop(0, `rgba(${col.r}, ${col.g}, ${col.b}, ${0.4 * glow * dim})`)
+        halo.addColorStop(1, `rgba(${col.r}, ${col.g}, ${col.b}, 0)`)
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, haloR, 0, Math.PI * 2)
+        ctx.fillStyle = halo
+        ctx.fill()
+
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 15, 0, Math.PI * 2)
+        ctx.lineWidth = 1.5
+        ctx.strokeStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${0.5 * glow * dim})`
+        ctx.stroke()
+      } else if (p.size > 3) {
+        // Leichter Glow um grössere Partikel
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size * 1.8, 0, Math.PI * 2)
         ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${alpha * 0.15})`

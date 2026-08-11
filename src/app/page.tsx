@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { useSession } from "next-auth/react"
 import { ArrowRight, Code, UploadCloud, Lock, Link2 } from "lucide-react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
@@ -56,9 +57,14 @@ export default function HomePage() {
       .catch(() => {})
   }, [])
 
+  const { status } = useSession()
+  const isAuthenticated = status === "authenticated"
+
   const primaryCta = needsSetup
     ? { href: "/setup", label: "Get started" }
-    : { href: "/register", label: "Start sharing" }
+    : isAuthenticated
+      ? { href: "/dashboard", label: "Start sharing" }
+      : { href: "/register", label: "Start sharing" }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -242,7 +248,9 @@ export default function HomePage() {
                 {primaryCta.label}
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link href="/login" className="btn-secondary text-base px-8 py-4">Sign in</Link>
+              {!isAuthenticated && (
+                <Link href="/login" className="btn-secondary text-base px-8 py-4">Sign in</Link>
+              )}
             </div>
           </motion.div>
         </section>
