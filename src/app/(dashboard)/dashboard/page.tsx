@@ -232,8 +232,12 @@ export default function DashboardPage() {
   const [uploadTotalBytes, setUploadTotalBytes] = useState(0)
   const [uploadSpeed, setUploadSpeed] = useState(0)
   const [estimatedTime, setEstimatedTime] = useState(0)
-  const speedHistory = useRef<{ time: number; bytes: number }[]>([])
-  const uploadStartTime = useRef<number>(0)
+  const uploadedBytesRef = useRef(0)
+  const totalBytesRef = useRef(0)
+  const smoothedSpeedRef = useRef(0)
+  const lastTickRef = useRef(0)
+  const lastTickBytesRef = useRef(0)
+  const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const loadFiles = useCallback(async () => {
     try {
@@ -259,31 +263,60 @@ export default function DashboardPage() {
     setCurrentPage(1)
   }, [searchQuery, filterType, fileTypeFilter])
 
-  // ── Speed & ETA Calculation ──
-  function updateSpeedMetrics(bytesUploaded: number) {
-    const now = Date.now()
-    const elapsed = (now - uploadStartTime.current) / 1000
-
-    speedHistory.current.push({ time: now, bytes: bytesUploaded })
-    const cutoff = now - 3000
-    speedHistory.current = speedHistory.current.filter(s => s.time > cutoff)
-
-    if (speedHistory.current.length >= 2) {
-      const first = speedHistory.current[0]
-      const last = speedHistory.current[speedHistory.current.length - 1]
-      const timeDiff = (last.time - first.time) / 1000
-      const bytesDiff = last.bytes - first.bytes
-      const speed = timeDiff > 0 ? bytesDiff / timeDiff : 0
-      setUploadSpeed(speed)
-      const remaining = uploadTotalBytes - bytesUploaded
-      const eta = speed > 0 ? remaining / speed : 0
-      setEstimatedTime(eta)
-    } else if (elapsed > 0) {
-      const avgSpeed = bytesUploaded / elapsed
-      setUploadSpeed(avgSpeed)
-      const remaining = uploadTotalBytes - bytesUploaded
-      setEstimatedTime(avgSpeed > 0 ? remaining / avgSpeed : 0)
+  // ── Speed & ETA Calculation (ref-based ticker, EMA-smoothed) ──
+  const stopUploadTicker = useCallback(() => {
+    if (tickerRef.current) {
+      clearInterval(tickerRef.current)
+      tickerRef.current = null
     }
+  }, [])
+
+  useEffect(() => stopUploadTicker, [stopUploadTicker])
+
+  function startUploadTicker(totalBytes: number) {
+    stopUploadTicker()
+    totalBytesRef.current = totalBytes
+    uploadedBytesRef.current = 0
+    smoothedSpeedRef.current = 0
+    lastTickRef.current = Date.now()
+    lastTickBytesRef.current = 0
+
+    setUploadTotalBytes(totalBytes)
+    setUploadedBytes(0)
+    setUploadSpeed(0)
+    setEstimatedTime(0)
+    setUploadPercent(0)
+
+    tickerRef.current = setInterval(() => {
+      const now = Date.now()
+      const dt = (now - lastTickRef.current) / 1000
+      const bytesNow = uploadedBytesRef.current
+      const bytesDelta = bytesNow - lastTickBytesRef.current
+      const total = totalBytesRef.current
+      const percent = total > 0 ? Math.round((bytesNow / total) * 100) : 0
+
+      const instantSpeed = dt > 0 ? bytesDelta / dt : 0
+      smoothedSpeedRef.current =
+        smoothedSpeedRef.current > 0
+          ? smoothedSpeedRef.current * 0.7 + instantSpeed * 0.3
+          : instantSpeed
+
+      const speed = smoothedSpeedRef.current
+      const remaining = total - bytesNow
+      const eta = speed > 0 && remaining > 0 ? remaining / speed : 0
+
+      setUploadedBytes(bytesNow)
+      setUploadPercent(percent)
+      setUploadSpeed(speed)
+      setEstimatedTime(eta)
+
+      lastTickRef.current = now
+      lastTickBytesRef.current = bytesNow
+
+      if (total > 0 && bytesNow >= total) {
+        stopUploadTicker()
+      }
+    }, 200)
   }
 
   // ── Upload Handler ──
@@ -298,13 +331,8 @@ export default function DashboardPage() {
     const uploadId = uuidV4();
 
     setUploading(true);
-    setUploadTotalBytes(file.size);
-    setUploadedBytes(0);
-    setUploadSpeed(0);
-    setEstimatedTime(0);
-    setUploadPercent(0);
-    speedHistory.current = [];
-    uploadStartTime.current = Date.now();
+    setUploadProgress("");
+    startUploadTicker(file.size);
 
     try {
       for (let i = 0; i < totalChunks; i++) {
@@ -336,9 +364,7 @@ export default function DashboardPage() {
           throw new Error(errData.error || `Chunk ${i} failed with status ${res.status}`)
         }
 
-        setUploadedBytes(end);
-        setUploadPercent(Math.round((end / file.size) * 100));
-        updateSpeedMetrics(end);
+        uploadedBytesRef.current = end;
       }
 
       setUploadProgress("Upload successful!");
@@ -349,6 +375,7 @@ export default function DashboardPage() {
     } catch (err: any) {
       setUploadProgress("Upload failed: " + err.message);
     } finally {
+      stopUploadTicker();
       setUploading(false);
     }
   }

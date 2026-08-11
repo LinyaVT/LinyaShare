@@ -190,7 +190,11 @@ Simply enter a `NEXTAUTH_SECRET` -- everything else is pre-configured for plug-a
 
 ### 1. Automatic IP & Port Detection
 
-The egg reads the server's port (`SERVER_PORT`) and IP (`SERVER_IP`) from Pterodactyl's injected environment variables, so the application always listens on the server's allocation port. No hard-coded port, nothing to configure.
+The egg reads the server's port (`SERVER_PORT`) and IP (`SERVER_IP`) from the panel. It uses `export PORT=${SERVER_PORT:-{{SERVER_PORT}}}`, so it prefers an injected `SERVER_PORT` environment variable and falls back to the panel's `{{SERVER_PORT}}` template (which FeatherPanel/Pterodactyl substitutes before launch). The application therefore always listens on the server's allocation port. No hard-coded port, nothing to configure.
+
+> [!TIP]
+> On startup the script prints a debug line: `[startup] SERVER_PORT=... PORT=... NEXT_PUBLIC_APP_URL=...`.
+> If `PORT=3000` or `PORT={{SERVER_PORT}}` appears, the panel is not providing the allocation port – check that the startup field still contains the `{{SERVER_PORT}}` template after saving.
 
 - **Without domain**: Uses `http://SERVER_IP:PORT` automatically for share links
 - **With domain**: Set `NEXT_PUBLIC_APP_URL=https://your-domain.com`
@@ -209,7 +213,7 @@ Enable automatic updates on server restart:
 
 - Set `AUTO_UPDATE=true`
 - On restart, the script will:
-  - Pull latest changes from the configured branch
+  - Fetch and hard-reset the repository to the configured branch (`git fetch origin` + `git reset --hard origin/<branch>`), so local file conflicts can never abort the update
   - Update dependencies if `package.json` changed
   - Rebuild if source files changed
 
