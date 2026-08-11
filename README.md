@@ -57,13 +57,13 @@ Open **http://localhost:3000** -- the setup wizard will guide you through admin 
 |-------|-----------|------------|
 | ![Login](./docs/img/login.png) | ![Dashboard](./docs/img/dashboard.png) | ![Appearance](./docs/img/appearance.png) |
 
-| Hub (default) | Hub (blue) | Hub (blue-red) |
+| Hub (default) | Hub (türkis) | Hub (blue-light) |
 |---------------|------------|----------------|
-| ![Hub default](./docs/img/hub_default.png) | ![Hub blue](./docs/img/hub_blue.png) | ![Hub blue-red](./docs/img/hub_blue-red.png) |
+| ![Hub default](./docs/img/hub_default.png) | ![Hub blue](./docs/img/hub_tuerkis.png) | ![Hub blue-red](./docs/img/hub_hub_blue-light.png) |
 
-| Hub (pink) | Hub (green) | Hub (green-yellow) |
+| Hub (lila) | Hub (green) | Hub (orange) |
 |------------|-------------|--------------------|
-| ![Hub pink](./docs/img/hub_pink.png) | ![Hub green](./docs/img/hub_green-font.png) | ![Hub green-yellow](./docs/img/hub_green-yellow.png) |
+| ![Hub pink](./docs/img/hub_lila.png) | ![Hub green](./docs/img/hub_green.png) | ![Hub green-yellow](./docs/img/hub_orange.png) |
 
 | Hub (mobile) | Appearance (mobile) | Login (mobile) | Dashboard (mobile) |
 |------------------|------------------|----------------|--------------------|

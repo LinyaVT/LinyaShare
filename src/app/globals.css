@@ -73,6 +73,26 @@
   75% { transform: translateY(-10px) translateX(15px); }
 }
 
+/* Animated transfer line (HeroVisual) */
+@keyframes dash-flow {
+  to { background-position: 14px 0; }
+}
+
+.dashed-track {
+  background-image: repeating-linear-gradient(
+    to right,
+    rgb(var(--primary-500) / 0.4) 0 6px,
+    transparent 6px 14px
+  );
+  animation: dash-flow 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashed-track {
+    animation: none;
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
