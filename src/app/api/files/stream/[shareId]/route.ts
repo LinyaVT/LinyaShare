@@ -3,7 +3,7 @@ import { getFileByShareId } from "@/lib/upload"
 import { auth } from "@/lib/auth"
 import bcrypt from "bcryptjs"
 import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
-import { Readable } from "stream"
+import { nodeStreamToWeb } from "@/lib/node-stream"
 import path from "path"
 import fs from "fs"
 
@@ -88,11 +88,12 @@ export async function GET(
 
     const contentLength = end - start + 1
 
-    // 🔥 Readable.toWeb() nutzt automatische Backpressure
-    // Der Node.js-Stream pausiert wenn der Web-Stream-Controller voll ist
-    // highWaterMark auf 64KB reduziert für minimale RAM-Pufferung
+    // Streaming mit 64KB Chunks und automatischer Backpressure.
+    // nodeStreamToWeb() statt Readable.toWeb() vermeidet den
+    // "Controller is already closed"-uncaughtException-Bug (nodejs/node#64529)
+    // bei abgebrochenen Verbindungen (HEAD, Video-Seek, Client-Disconnect).
     const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 }) // 64KB chunks
-    const readableStream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>
+    const readableStream = nodeStreamToWeb(nodeStream)
 
     const headers: Record<string, string> = {
       "Content-Type": file.type || "application/octet-stream",

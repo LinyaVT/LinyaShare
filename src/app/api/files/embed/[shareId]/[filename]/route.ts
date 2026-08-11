@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
 import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
+import { nodeStreamToWeb } from "@/lib/node-stream"
 import path from "path"
 import fs from "fs"
-import { Readable } from "stream"
 
 // Path-Sanitizing für shareId
 function isValidShareId(shareId: string): boolean {
@@ -75,9 +75,12 @@ export async function GET(
 
     const contentLength = end - start + 1
 
-    // Streaming mit 64KB Chunks
+    // Streaming mit 64KB Chunks.
+    // nodeStreamToWeb() statt Readable.toWeb() vermeidet den
+    // "Controller is already closed"-uncaughtException-Bug (nodejs/node#64529)
+    // bei abgebrochenen Verbindungen (HEAD, Video-Seek, Client-Disconnect).
     const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 })
-    const readableStream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>
+    const readableStream = nodeStreamToWeb(nodeStream)
 
     // Embed: Immer inline liefern (wie public/ Datei)
     const encodedFilename = encodeURIComponent(file.originalName || file.name)

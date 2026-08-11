@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
 import bcrypt from "bcryptjs"
 import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
-import { Readable } from "stream"
+import { nodeStreamToWeb } from "@/lib/node-stream"
 import path from "path"
 import fs from "fs"
 
@@ -57,14 +57,11 @@ export async function POST(request: NextRequest) {
     const contentDisposition = `attachment; filename="${file.originalName}"; filename*=UTF-8''${encodedFilename}`;
 
     // Stream the file
+    // nodeStreamToWeb() statt Readable.toWeb()/manuellem ReadableStream:
+    // vermeidet den "Controller is already closed"-uncaughtException-Bug
+    // (nodejs/node#64529) bei abgebrochenen Verbindungen.
     const nodeStream = fs.createReadStream(filePath)
-    const readableStream = new ReadableStream({
-      start(controller) {
-        nodeStream.on('data', (chunk) => controller.enqueue(chunk))
-        nodeStream.on('end', () => controller.close())
-        nodeStream.on('error', (err) => controller.error(err))
-      },
-    })
+    const readableStream = nodeStreamToWeb(nodeStream)
 
     return new NextResponse(readableStream, {
       headers: {
