@@ -5,12 +5,14 @@ import { ExternalLink, Code, Shield, FileText } from "lucide-react"
 import Link from "next/link"
 
 export default function Footer() {
+  const [siteName, setSiteName] = useState("LinyaShare")
   const [imprintUrl, setImprintUrl] = useState("")
 
   useEffect(() => {
     fetch("/api/settings/public")
       .then((res) => res.json())
       .then((data) => {
+        if (data.siteName) setSiteName(data.siteName)
         if (data.imprintUrl) setImprintUrl(data.imprintUrl)
       })
       .catch(() => {})
@@ -21,7 +23,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-dark-400">
-            &copy; {new Date().getFullYear()} LinyaShare &mdash; Private file sharing
+            &copy; {new Date().getFullYear()} {siteName} &mdash; Private file sharing
           </p>
           <div className="flex items-center gap-4 text-sm">
             <Link href="https://github.com/LinyaVT/LinyaShare" target="_blank" className="text-dark-400 hover:text-primary-400 transition-colors flex items-center gap-1">
@@ -45,7 +47,7 @@ export default function Footer() {
             )}
           </div>
           <p className="text-xs text-dark-500">
-            Built with ❤️ by <span className="font-semibold"><a href="https://github.com/LinyaVT" target="_blank" rel="noopener noreferrer" className="hover:text-primary-400 transition-colors">Lina</a></span>
+            LinyaShare - Built with ❤️ by <span className="font-semibold"><a href="https://github.com/LinyaVT" target="_blank" rel="noopener noreferrer" className="hover:text-primary-400 transition-colors">Lina</a></span>
           </p>
         </div>
       </div>

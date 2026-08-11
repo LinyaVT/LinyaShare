@@ -3,9 +3,13 @@ import Link from "next/link"
 import { FileQuestion, Home, LayoutDashboard } from "lucide-react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
+import { getSiteName } from "@/lib/settings"
 
-export const metadata: Metadata = {
-  title: "404 - Page Not Found - LinyaShare",
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `404 - Page Not Found - ${siteName}`,
+  }
 }
 
 export default function NotFound() {

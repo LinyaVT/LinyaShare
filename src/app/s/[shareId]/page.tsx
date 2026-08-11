@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { MetadataRoute } from "next"
 import SharePageClient from "@/components/SharePageClient"
 import { getFileByShareId } from "@/lib/upload"
+import { getSiteName } from "@/lib/settings"
 
 type PageProps = {
   params: Promise<{ shareId: string }>
@@ -9,13 +10,14 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { shareId } = await params
-  
+  const siteName = await getSiteName()
+
   try {
     const file = await getFileByShareId(shareId)
     
     if (!file) {
       return {
-        title: "File Not Found - LinyaShare",
+        title: `File Not Found - ${siteName}`,
         description: "This file link is invalid or has been deleted.",
       }
     }
@@ -33,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     else if (fileType.includes("archive") || /\.(zip|rar|tar|gz|7z)$/i.test(fileName)) typeLabel = "Archive"
     else if (fileType.includes("text") || /\.(txt|md|doc|pdf)$/i.test(fileName)) typeLabel = "Document"
 
-    const title = `${fileName} - LinyaShare`
+    const title = `${fileName} - ${siteName}`
     const description = `${typeLabel} shared by ${uploader}${hasPassword ? " (Password Protected)" : ""}`
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://linyashare.sknif.de"
     const shareUrl = `${baseUrl}/s/${shareId}`
@@ -47,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         title,
         description,
         url: shareUrl,
-        siteName: "LinyaShare",
+        siteName,
         type: "website",
         images: [
           {
@@ -101,7 +103,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return metadata
   } catch (error) {
     return {
-      title: "LinyaShare - Secure File Sharing",
+      title: `${siteName} - Secure File Sharing`,
       description: "Share files securely with password protection.",
     }
   }

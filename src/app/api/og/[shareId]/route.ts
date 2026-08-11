@@ -18,9 +18,9 @@ export async function GET(
     // Theme-Akzentfarben laden (OG-Bilder folgen dem Instanz-Theme)
     let accentFrom = "#ec4899"
     let accentTo = "#db2777"
+    const map: Record<string, string> = {}
     try {
       const rows = await prisma.setting.findMany()
-      const map: Record<string, string> = {}
       rows.forEach((s) => {
         map[s.key] = s.value
       })
@@ -28,6 +28,8 @@ export async function GET(
       accentFrom = theme.accentMode === "single" ? theme.accentColor : theme.accentFrom
       accentTo = theme.accentMode === "single" ? theme.accentColor : theme.accentTo
     } catch {}
+
+    const siteName = map.siteName?.trim() || "LinyaShare"
 
     const fileName = file.originalName || file.name
     const fileType = file.type || ""
@@ -42,7 +44,7 @@ export async function GET(
     
     if (hasPassword) {
       // Passwort-geschützt: Schloss-Icon
-      svg = generateLockedSvg(width, height, fileName, uploader, accentFrom, accentTo)
+      svg = generateLockedSvg(width, height, fileName, uploader, siteName, accentFrom, accentTo)
     } else {
       // Dateityp-basiertes SVG
       const isImage = fileType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(fileName)
@@ -50,13 +52,13 @@ export async function GET(
       const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(fileName)
 
       if (isImage) {
-        svg = generateImageSvg(width, height, fileName, uploader, accentFrom, accentTo)
+        svg = generateImageSvg(width, height, fileName, uploader, siteName, accentFrom, accentTo)
       } else if (isVideo) {
-        svg = generateVideoSvg(width, height, fileName, uploader, accentFrom, accentTo)
+        svg = generateVideoSvg(width, height, fileName, uploader, siteName, accentFrom, accentTo)
       } else if (isAudio) {
-        svg = generateAudioSvg(width, height, fileName, uploader, accentFrom, accentTo)
+        svg = generateAudioSvg(width, height, fileName, uploader, siteName, accentFrom, accentTo)
       } else {
-        svg = generateFileSvg(width, height, fileName, fileType, uploader, accentFrom, accentTo)
+        svg = generateFileSvg(width, height, fileName, fileType, uploader, siteName, accentFrom, accentTo)
       }
     }
 
@@ -72,7 +74,7 @@ export async function GET(
   }
 }
 
-function generateLockedSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
+function generateLockedSvg(width: number, height: number, fileName: string, uploader: string, siteName: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 40 ? fileName.substring(0, 40) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -118,12 +120,12 @@ function generateLockedSvg(width: number, height: number, fileName: string, uplo
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader}
+    Shared by ${uploader} &middot; ${siteName}
   </text>
 </svg>`
 }
 
-function generateImageSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
+function generateImageSvg(width: number, height: number, fileName: string, uploader: string, siteName: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -163,12 +165,12 @@ function generateImageSvg(width: number, height: number, fileName: string, uploa
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader}
+    Shared by ${uploader} &middot; ${siteName}
   </text>
 </svg>`
 }
 
-function generateVideoSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
+function generateVideoSvg(width: number, height: number, fileName: string, uploader: string, siteName: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -206,12 +208,12 @@ function generateVideoSvg(width: number, height: number, fileName: string, uploa
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader}
+    Shared by ${uploader} &middot; ${siteName}
   </text>
 </svg>`
 }
 
-function generateAudioSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
+function generateAudioSvg(width: number, height: number, fileName: string, uploader: string, siteName: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -259,12 +261,12 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
   <text x="${width/2}" y="${height - 40}" 
         font-family="Arial, sans-serif" font-size="16" 
         fill="#64748b" text-anchor="middle">
-    Shared by ${uploader}
+    Shared by ${uploader} &middot; ${siteName}
   </text>
 </svg>`
 }
 
-function generateFileSvg(width: number, height: number, fileName: string, fileType: string, uploader: string, accentFrom: string, accentTo: string) {
+function generateFileSvg(width: number, height: number, fileName: string, fileType: string, uploader: string, siteName: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   // Bestimme Farbe basierend auf Dateityp

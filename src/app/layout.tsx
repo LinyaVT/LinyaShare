@@ -5,10 +5,14 @@ import { ToastProvider } from "@/components/Toast"
 import AnimatedBackground from "@/components/AnimatedBackground"
 import { prisma } from "@/lib/prisma"
 import { resolveTheme, computeCssVars, cssVarsToString, themeToDataAttributes, FONT_MAP } from "@/lib/theme"
+import { getSiteName } from "@/lib/settings"
 
-export const metadata: Metadata = {
-  title: "LinyaShare - Secure File Sharing",
-  description: "Share files securely with password protection. Modern file sharing for everyone.",
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `${siteName} - Secure File Sharing`,
+    description: `Share files securely with password protection on ${siteName}. Modern file sharing for everyone.`,
+  }
 }
 
 // Theme muss pro Request aus der Datenbank geladen werden
@@ -40,7 +44,7 @@ export default async function RootLayout({
     .filter(Boolean)
 
   return (
-    <html lang="en" {...dataAttrs}>
+    <html lang="en" {...dataAttrs} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
