@@ -13,6 +13,7 @@ import {
 import Header from "@/components/Header"
 import { useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
+import SkeletonLoader from "@/components/SkeletonLoader"
 import {
   DEFAULT_THEME, FONT_MAP, computeCssVars,
   resolveTheme, themeToDataAttributes,
@@ -582,7 +583,7 @@ export default function AdminSettingsPage() {
         <p className="text-dark-400 text-xs sm:text-sm mb-4 sm:mb-6">Configure your service</p>
 
         {loading ? (
-          <div className="flex justify-center py-12"><div className="loading-spinner"></div></div>
+          <SkeletonLoader variant="settings" count={3} />
         ) : (
           <>
             {navItems}

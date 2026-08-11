@@ -13,6 +13,7 @@ import SearchBar from "@/components/SearchBar"
 import FilterBar from "@/components/FilterBar"
 import Pagination from "@/components/Pagination"
 import AdminFileMenu from "@/components/AdminFileMenu"
+import SkeletonLoader from "@/components/SkeletonLoader"
 import { formatSize, formatDate } from "@/lib/utils"
 import UnclaimedFileMenu from "@/components/UnclaimedFileMenu"
 
@@ -293,7 +294,7 @@ export default function AdminFilesPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><div className="loading-spinner"></div></div>
+          <SkeletonLoader variant="list" count={5} />
         ) : activeTab === "assigned" ? (
           (() => {
             const filtered = files.filter((file: any) => {

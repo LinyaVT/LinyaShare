@@ -12,6 +12,7 @@ import SearchBar from "@/components/SearchBar"
 import FilterBar from "@/components/FilterBar"
 import Pagination from "@/components/Pagination"
 import AdminUserMenu from "@/components/AdminUserMenu"
+import SkeletonLoader from "@/components/SkeletonLoader"
 import { formatSize } from "@/lib/utils"
 
 function bytesToMB(bytes: number) {
@@ -250,7 +251,7 @@ export default function AdminUsersPage() {
         </AnimatePresence>
 
         {loading ? (
-          <div className="flex justify-center py-12"><div className="loading-spinner"></div></div>
+          <SkeletonLoader variant="list" count={5} />
         ) : (() => {
           // Filter & Sort Users
           const filtered = users.filter((user: any) => {

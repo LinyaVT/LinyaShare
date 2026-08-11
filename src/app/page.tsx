@@ -53,7 +53,7 @@ export default function HomePage() {
                 </Link>
               ) : (
                 <Link href="/register" className="btn-primary text-lg px-8 py-4">
-                  Get Started Free
+                  Get Started
                 </Link>
               )}
             </div>
