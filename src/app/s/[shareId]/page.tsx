@@ -3,6 +3,28 @@ import { MetadataRoute } from "next"
 import SharePageClient from "@/components/SharePageClient"
 import { getFileByShareId } from "@/lib/upload"
 import { getSiteName } from "@/lib/settings"
+import { getFileTypeCategory } from "@/lib/utils"
+
+const TYPE_LABELS: Record<string, string> = {
+  video: "Video",
+  audio: "Audio",
+  image: "Image",
+  document: "Document",
+  archive: "Archive",
+  code: "Code & Script",
+  executable: "Program",
+  model: "3D Model",
+  data: "Data & Config",
+  database: "Database",
+  font: "Font",
+  pdf: "PDF",
+  spreadsheet: "Spreadsheet",
+  presentation: "Presentation",
+  ebook: "E-Book",
+  subtitle: "Subtitle",
+  design: "Design",
+  key: "Key / Certificate",
+}
 
 type PageProps = {
   params: Promise<{ shareId: string }>
@@ -27,13 +49,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const hasPassword = !!file.password
     const uploader = file.user?.name || "Unknown"
     
-    // Bestimme Dateityp für Beschreibung
-    let typeLabel = "File"
-    if (fileType.startsWith("image/")) typeLabel = "Image"
-    else if (fileType.startsWith("video/")) typeLabel = "Video"
-    else if (fileType.startsWith("audio/")) typeLabel = "Audio"
-    else if (fileType.includes("archive") || /\.(zip|rar|tar|gz|7z)$/i.test(fileName)) typeLabel = "Archive"
-    else if (fileType.includes("text") || /\.(txt|md|doc|pdf)$/i.test(fileName)) typeLabel = "Document"
+    // Bestimme Dateityp-Label über die zentrale Klassifikation
+    const typeLabel = TYPE_LABELS[getFileTypeCategory(fileType || "", fileName)] || "File"
 
     const title = `${fileName} - ${siteName}`
     const description = `${typeLabel} shared by ${uploader}${hasPassword ? " (Password Protected)" : ""}`
@@ -68,16 +85,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     }
 
-    // Zusätzliche Meta-Tags für Video/Audio
+    // Zusätzliche Meta-Tags für Bild/Video/Audio
     if (!hasPassword) {
+      const isImage = fileType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|ico|svg)$/i.test(fileName)
       const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|avi|mov|mkv|wmv)$/i.test(fileName)
       const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(fileName)
 
       // Direkter Media-Link (endet auf die Dateiendung) – so erkennen Discord & Co.
-      // die Datei als Video/Audio und zeigen einen Player an.
+      // die Datei als Bild/Video/Audio und zeigen Vorschau an. Bilder werden so
+      // wie Videos behandelt: die URL endet auf die echte Dateiendung (.png etc.)
+      // und liefert das tatsächlich hochgeladene Bild aus.
       const mediaUrl = `${baseUrl}/api/files/embed/${shareId}/${encodeURIComponent(fileName)}`
 
-      if (isVideo) {
+      if (isImage) {
+        metadata.openGraph = {
+          ...metadata.openGraph,
+          images: [{
+            url: mediaUrl,
+            width: 1200,
+            height: 630,
+            alt: fileName,
+          }],
+        }
+        metadata.twitter = {
+          ...metadata.twitter,
+          images: [mediaUrl],
+        }
+      } else if (isVideo) {
         metadata.openGraph = {
           ...metadata.openGraph,
           type: "video.other",

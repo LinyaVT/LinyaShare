@@ -14,7 +14,7 @@ import FilterBar from "@/components/FilterBar"
 import Pagination from "@/components/Pagination"
 import AdminFileMenu from "@/components/AdminFileMenu"
 import SkeletonLoader from "@/components/SkeletonLoader"
-import { formatSize, formatDate } from "@/lib/utils"
+import { formatSize, formatDate, getFileTypeCategory } from "@/lib/utils"
 import UnclaimedFileMenu from "@/components/UnclaimedFileMenu"
 
 type Tab = "assigned" | "unclaimed"
@@ -241,7 +241,21 @@ export default function AdminFilesPage() {
                   { value: "audio", label: "Audio" },
                   { value: "image", label: "Images" },
                   { value: "document", label: "Documents" },
+                  { value: "pdf", label: "PDFs" },
+                  { value: "spreadsheet", label: "Tables" },
+                  { value: "presentation", label: "Slides" },
+                  { value: "ebook", label: "E-Books" },
+                  { value: "subtitle", label: "Subtitles" },
                   { value: "archive", label: "Archives" },
+                  { value: "code", label: "Code & Scripts" },
+                  { value: "executable", label: "Programs" },
+                  { value: "model", label: "3D Models" },
+                  { value: "design", label: "Design" },
+                  { value: "data", label: "Data & Config" },
+                  { value: "database", label: "Databases" },
+                  { value: "font", label: "Fonts" },
+                  { value: "key", label: "Keys & Certs" },
+                  { value: "other", label: "Other" },
                 ],
                 onChange: setTypeFilter,
               },
@@ -301,14 +315,7 @@ export default function AdminFilesPage() {
               const query = searchQuery.toLowerCase()
               const matchesSearch = !query || file.originalName.toLowerCase().includes(query)
 
-              const matchesType = typeFilter === "all" || (() => {
-                if (typeFilter === "video") return file.type?.startsWith("video/")
-                if (typeFilter === "audio") return file.type?.startsWith("audio/")
-                if (typeFilter === "image") return file.type?.startsWith("image/")
-                if (typeFilter === "document") return !file.type?.startsWith("video/") && !file.type?.startsWith("audio/") && !file.type?.startsWith("image/") && !file.type?.includes("zip") && !file.type?.includes("rar")
-                if (typeFilter === "archive") return file.type?.includes("zip") || file.type?.includes("rar") || file.type?.includes("tar") || file.type?.includes("7z")
-                return true
-              })()
+              const matchesType = typeFilter === "all" || getFileTypeCategory(file.type || "", file.originalName || file.name) === typeFilter
 
               const matchesDate = (() => {
                 if (dateFilter === "all") return true

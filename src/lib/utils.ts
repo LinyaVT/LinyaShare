@@ -59,9 +59,9 @@ export function getFileExtension(fileName: string): string {
 // FILE TYPE DETECTION
 // ──────────────────────────────────────────────────────────
 
-import { VIDEO_EXTENSIONS, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, ARCHIVE_EXTENSIONS } from "./constants"
+import { VIDEO_EXTENSIONS, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, ARCHIVE_EXTENSIONS, CODE_EXTENSIONS, EXECUTABLE_EXTENSIONS, MODEL_EXTENSIONS, DATA_EXTENSIONS, FONT_EXTENSIONS, DOCUMENT_EXTENSIONS, PDF_EXTENSIONS, SPREADSHEET_EXTENSIONS, PRESENTATION_EXTENSIONS, EBOOK_EXTENSIONS, SUBTITLE_EXTENSIONS, DESIGN_EXTENSIONS, DATABASE_EXTENSIONS, KEY_EXTENSIONS } from "./constants"
 
-export type FileTypeCategory = "video" | "audio" | "image" | "document" | "archive" | "other"
+export type FileTypeCategory = "video" | "audio" | "image" | "document" | "archive" | "code" | "executable" | "model" | "data" | "font" | "pdf" | "spreadsheet" | "presentation" | "ebook" | "subtitle" | "design" | "database" | "key" | "other"
 
 export interface FileTypeInfo {
   category: FileTypeCategory
@@ -71,26 +71,43 @@ export interface FileTypeInfo {
 }
 
 /**
- * Determine the file type category based on MIME type and filename
+ * Determine the file type category based on MIME type and filename.
+ * Spezifische Extension-Kategorien werden vor den generischen MIME-Fallbacks
+ * geprüft, damit z.B. eine .jar (zip-MIME) nicht als Archiv gilt.
  */
 export function getFileTypeCategory(mimeType: string, fileName: string): FileTypeCategory {
   if (mimeType.startsWith("video/")) return "video"
   if (mimeType.startsWith("audio/")) return "audio"
   if (mimeType.startsWith("image/")) return "image"
-  
-  const ext = getFileExtension(fileName)
-  
-  if (mimeType.includes("pdf") || mimeType.includes("document") || 
-      mimeType.includes("sheet") || mimeType.includes("presentation") || 
-      mimeType.includes("text/")) return "document"
-  
+
+  if (CODE_EXTENSIONS.test(fileName)) return "code"
+  if (EXECUTABLE_EXTENSIONS.test(fileName)) return "executable"
+  if (MODEL_EXTENSIONS.test(fileName)) return "model"
+  if (DATA_EXTENSIONS.test(fileName)) return "data"
+  if (DATABASE_EXTENSIONS.test(fileName)) return "database"
+  if (FONT_EXTENSIONS.test(fileName)) return "font"
+  if (DESIGN_EXTENSIONS.test(fileName)) return "design"
+  if (KEY_EXTENSIONS.test(fileName)) return "key"
+  if (PDF_EXTENSIONS.test(fileName)) return "pdf"
+  if (SPREADSHEET_EXTENSIONS.test(fileName)) return "spreadsheet"
+  if (PRESENTATION_EXTENSIONS.test(fileName)) return "presentation"
+  if (EBOOK_EXTENSIONS.test(fileName)) return "ebook"
+  if (SUBTITLE_EXTENSIONS.test(fileName)) return "subtitle"
+  if (DOCUMENT_EXTENSIONS.test(fileName)) return "document"
+
+  // Differenzierte MIME-Fallbacks (für Dateien ohne erkannte Endung)
+  if (mimeType.includes("pdf")) return "pdf"
+  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "spreadsheet"
+  if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "presentation"
+  if (mimeType.includes("text/") || mimeType.includes("document") || mimeType.includes("word")) return "document"
+
   if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar") || 
       mimeType.includes("7z") || mimeType.includes("gzip") || mimeType.includes("compress") ||
-      ARCHIVE_EXTENSIONS.test(ext)) return "archive"
+      ARCHIVE_EXTENSIONS.test(fileName)) return "archive"
   
-  if (VIDEO_EXTENSIONS.test(ext)) return "video"
-  if (AUDIO_EXTENSIONS.test(ext)) return "audio"
-  if (IMAGE_EXTENSIONS.test(ext)) return "image"
+  if (VIDEO_EXTENSIONS.test(fileName)) return "video"
+  if (AUDIO_EXTENSIONS.test(fileName)) return "audio"
+  if (IMAGE_EXTENSIONS.test(fileName)) return "image"
   
   return "other"
 }
@@ -153,6 +170,49 @@ export function getMimeTypeFromExtension(ext: string): string {
   if (extLower === '.zip') return 'application/zip'
   if (extLower === '.rar') return 'application/x-rar-compressed'
   if (extLower === '.txt') return 'text/plain'
+  if (extLower === '.jar') return 'application/java-archive'
+  if (extLower === '.py' || extLower === '.pyw') return 'text/x-python'
+  if (extLower === '.js') return 'text/javascript'
+  if (extLower === '.ts') return 'text/typescript'
+  if (extLower === '.json') return 'application/json'
+  if (extLower === '.xml') return 'application/xml'
+  if (extLower === '.yaml' || extLower === '.yml') return 'application/yaml'
+  if (extLower === '.toml') return 'application/toml'
+  if (extLower === '.ini' || extLower === '.cfg' || extLower === '.conf') return 'text/plain'
+  if (extLower === '.db' || extLower === '.sqlite' || extLower === '.sqlite3') return 'application/vnd.sqlite3'
+  if (extLower === '.ttf') return 'font/ttf'
+  if (extLower === '.otf') return 'font/otf'
+  if (extLower === '.woff') return 'font/woff'
+  if (extLower === '.woff2') return 'font/woff2'
+  if (extLower === '.stl') return 'model/stl'
+  if (extLower === '.obj') return 'model/obj'
+  if (extLower === '.glb') return 'model/gltf-binary'
+  if (extLower === '.gltf') return 'model/gltf+json'
+  if (extLower === '.exe') return 'application/x-msdownload'
+  if (extLower === '.bat' || extLower === '.cmd') return 'application/x-bat'
+  if (extLower === '.pdf') return 'application/pdf'
+  if (extLower === '.ppt' || extLower === '.pptx' || extLower === '.odp') return 'application/vnd.ms-powerpoint'
+  if (extLower === '.xls' || extLower === '.xlsx') return 'application/vnd.ms-excel'
+  if (extLower === '.ods') return 'application/vnd.oasis.opendocument.spreadsheet'
+  if (extLower === '.csv') return 'text/csv'
+  if (extLower === '.doc' || extLower === '.docx') return 'application/msword'
+  if (extLower === '.md') return 'text/markdown'
+  if (extLower === '.epub') return 'application/epub+zip'
+  if (extLower === '.mobi' || extLower === '.azw' || extLower === '.azw3') return 'application/x-mobipocket-ebook'
+  if (extLower === '.djvu') return 'image/vnd.djvu'
+  if (extLower === '.srt') return 'application/x-subrip'
+  if (extLower === '.vtt') return 'text/vtt'
+  if (extLower === '.ass' || extLower === '.ssa') return 'text/x-ssa'
+  if (extLower === '.psd') return 'image/vnd.adobe.photoshop'
+  if (extLower === '.ai' || extLower === '.eps') return 'application/postscript'
+  if (extLower === '.pem' || extLower === '.crt' || extLower === '.cer') return 'application/x-pem-file'
+  if (extLower === '.key' || extLower === '.pfx' || extLower === '.p12') return 'application/x-pkcs12'
+  if (extLower === '.iso') return 'application/x-iso9660-image'
+  if (extLower === '.torrent') return 'application/x-bittorrent'
+  if (extLower === '.kml') return 'application/vnd.google-earth.kml+xml'
+  if (extLower === '.gpx') return 'application/gpx+xml'
+  if (extLower === '.html' || extLower === '.htm') return 'text/html'
+  if (extLower === '.css') return 'text/css'
   
   return 'application/octet-stream'
 }

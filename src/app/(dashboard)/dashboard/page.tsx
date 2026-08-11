@@ -8,7 +8,7 @@ import {
   Upload, Trash2, Copy, Check, FileText, LogOut, Settings, Shield, Lock, Eye, EyeOff,
   HardDrive, Download, Calendar, Search, Filter, X, FileVideo, FileAudio, FileImage,
   FileArchive, File as FileIcon, ChevronDown, ChevronUp, LayoutGrid, List, Play, Share2, Music, Film, Link as LinkIcon, Image,
-  MoreVertical
+  MoreVertical, Code, Binary, Box, Database, Type, FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import Header from "@/components/Header"
@@ -21,13 +21,46 @@ import MobileFileMenu from "@/components/MobileFileMenu"
 // ──────────────────────────────────────────────────────────
 // FILE TYPE HELPERS
 // ──────────────────────────────────────────────────────────
-function getFileIcon(type: string) {
-  if (type.startsWith("video/")) return <FileVideo className="w-4 h-4 text-primary-400 shrink-0" />
-  if (type.startsWith("audio/")) return <FileAudio className="w-4 h-4 text-primary-400 shrink-0" />
-  if (type.startsWith("image/")) return <FileImage className="w-4 h-4 text-primary-400 shrink-0" />
-  if (type.includes("zip") || type.includes("rar") || type.includes("tar") || type.includes("7z"))
-    return <FileArchive className="w-4 h-4 text-primary-400 shrink-0" />
-  return <FileIcon className="w-4 h-4 text-primary-400 shrink-0" />
+function getFileIcon(type: string, name: string) {
+  const category = getFileTypeCategory(type, name)
+  switch (category) {
+    case "video":
+      return <FileVideo className="w-4 h-4 text-primary-400 shrink-0" />
+    case "audio":
+      return <FileAudio className="w-4 h-4 text-primary-400 shrink-0" />
+    case "image":
+      return <FileImage className="w-4 h-4 text-primary-400 shrink-0" />
+    case "archive":
+      return <FileArchive className="w-4 h-4 text-primary-400 shrink-0" />
+    case "code":
+      return <Code className="w-4 h-4 text-primary-400 shrink-0" />
+    case "executable":
+      return <Binary className="w-4 h-4 text-primary-400 shrink-0" />
+    case "model":
+      return <Box className="w-4 h-4 text-primary-400 shrink-0" />
+    case "data":
+      return <Database className="w-4 h-4 text-primary-400 shrink-0" />
+    case "database":
+      return <Table className="w-4 h-4 text-primary-400 shrink-0" />
+    case "font":
+      return <Type className="w-4 h-4 text-primary-400 shrink-0" />
+    case "pdf":
+      return <FileBadge className="w-4 h-4 text-primary-400 shrink-0" />
+    case "spreadsheet":
+      return <FileSpreadsheet className="w-4 h-4 text-primary-400 shrink-0" />
+    case "presentation":
+      return <Presentation className="w-4 h-4 text-primary-400 shrink-0" />
+    case "ebook":
+      return <BookOpen className="w-4 h-4 text-primary-400 shrink-0" />
+    case "subtitle":
+      return <Captions className="w-4 h-4 text-primary-400 shrink-0" />
+    case "design":
+      return <Palette className="w-4 h-4 text-primary-400 shrink-0" />
+    case "key":
+      return <FileKey className="w-4 h-4 text-primary-400 shrink-0" />
+    default:
+      return <FileIcon className="w-4 h-4 text-primary-400 shrink-0" />
+  }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -39,7 +72,20 @@ const FILE_TYPE_OPTIONS = [
   { value: "audio", label: "Music", icon: "Music" },
   { value: "image", label: "Images", icon: "Image" },
   { value: "document", label: "Documents", icon: "FileText" },
+  { value: "pdf", label: "PDFs", icon: "FileBadge" },
+  { value: "spreadsheet", label: "Tables", icon: "FileSpreadsheet" },
+  { value: "presentation", label: "Slides", icon: "Presentation" },
+  { value: "ebook", label: "E-Books", icon: "BookOpen" },
+  { value: "subtitle", label: "Subtitles", icon: "Captions" },
   { value: "archive", label: "Archives", icon: "FileArchive" },
+  { value: "code", label: "Code", icon: "Code" },
+  { value: "executable", label: "Programs", icon: "Binary" },
+  { value: "model", label: "3D Models", icon: "Box" },
+  { value: "design", label: "Design", icon: "Palette" },
+  { value: "data", label: "Data & Config", icon: "Database" },
+  { value: "database", label: "Databases", icon: "Table" },
+  { value: "font", label: "Fonts", icon: "Type" },
+  { value: "key", label: "Keys & Certs", icon: "FileKey" },
   { value: "other", label: "Other", icon: "FileIcon" },
 ] as const
 
@@ -49,6 +95,19 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Music,
   Image,
   FileArchive,
+  Code,
+  Binary,
+  Box,
+  Database,
+  Table,
+  Type,
+  FileBadge,
+  FileSpreadsheet,
+  Presentation,
+  BookOpen,
+  Captions,
+  Palette,
+  FileKey,
   FileIcon
 }
 
@@ -696,7 +755,7 @@ export default function DashboardPage() {
                     <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <h3 className="text-white font-medium break-all flex items-center gap-2">
-                          {getFileIcon(file.type)}
+{getFileIcon(file.type, file.originalName || file.name)}
                           {file.originalName}
                         </h3>
                         <div className="flex flex-wrap gap-3 mt-2 text-sm text-dark-400">
@@ -837,7 +896,7 @@ export default function DashboardPage() {
                     {/* File Icon & Name */}
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center shrink-0">
-                        {getFileIcon(file.type)}
+                        {getFileIcon(file.type, file.originalName || file.name)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-white font-medium text-sm truncate">{file.originalName}</h3>

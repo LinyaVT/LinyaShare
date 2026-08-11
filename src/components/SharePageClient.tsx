@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
-import { Lock, AlertCircle, Download, FileVideo, FileAudio, FileArchive, File, Shield, HardDrive, User, Share2, Music, Image, Film, Package } from "lucide-react"
+import { Lock, AlertCircle, Download, FileVideo, FileAudio, FileArchive, File, Shield, HardDrive, User, Share2, Music, Image, Film, Package, Code, Binary, Box, Database, Type, FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey } from "lucide-react"
 import { formatSize, getFileTypeCategory } from "@/lib/utils"
 
 // ──────────────────────────────────────────────────────────
@@ -20,6 +20,32 @@ function getFileTypeInfo(type: string, name: string) {
       return { icon: Image, label: "Image", color: "text-blue-400", bgClass: "bg-blue-500/10" }
     case "archive":
       return { icon: Package, label: "Archive", color: "text-yellow-400", bgClass: "bg-yellow-500/10" }
+    case "code":
+      return { icon: Code, label: "Code", color: "text-cyan-400", bgClass: "bg-cyan-500/10" }
+    case "executable":
+      return { icon: Binary, label: "Program", color: "text-amber-400", bgClass: "bg-amber-500/10" }
+    case "model":
+      return { icon: Box, label: "3D Model", color: "text-indigo-400", bgClass: "bg-indigo-500/10" }
+    case "data":
+      return { icon: Database, label: "Data & Config", color: "text-emerald-400", bgClass: "bg-emerald-500/10" }
+    case "database":
+      return { icon: Table, label: "Database", color: "text-teal-400", bgClass: "bg-teal-500/10" }
+    case "font":
+      return { icon: Type, label: "Font", color: "text-fuchsia-400", bgClass: "bg-fuchsia-500/10" }
+    case "pdf":
+      return { icon: FileBadge, label: "PDF", color: "text-red-400", bgClass: "bg-red-500/10" }
+    case "spreadsheet":
+      return { icon: FileSpreadsheet, label: "Spreadsheet", color: "text-green-400", bgClass: "bg-green-500/10" }
+    case "presentation":
+      return { icon: Presentation, label: "Presentation", color: "text-orange-400", bgClass: "bg-orange-500/10" }
+    case "ebook":
+      return { icon: BookOpen, label: "E-Book", color: "text-violet-400", bgClass: "bg-violet-500/10" }
+    case "subtitle":
+      return { icon: Captions, label: "Subtitles", color: "text-sky-400", bgClass: "bg-sky-500/10" }
+    case "design":
+      return { icon: Palette, label: "Design", color: "text-pink-400", bgClass: "bg-pink-500/10" }
+    case "key":
+      return { icon: FileKey, label: "Key / Certificate", color: "text-gray-400", bgClass: "bg-gray-500/10" }
     default:
       return { icon: File, label: "File", color: "text-primary-400", bgClass: "bg-primary-500/10" }
   }
@@ -106,8 +132,8 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     setError("")
 
     try {
-      // Zuerst testen wir den Download, um das Passwort zu verifizieren
-      const res = await fetch("/api/files/download", {
+      // Passwort verifizieren (ohne den Download-Counter zu erhöhen)
+      const res = await fetch("/api/files/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shareId, password }),
@@ -140,7 +166,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     try {
       // Bei passwortgeschützten Dateien: erst Passwort verifizieren falls nötig
       if (needsPassword && !passwordVerified) {
-        const verifyRes = await fetch("/api/files/download", {
+        const verifyRes = await fetch("/api/files/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ shareId, password }),
