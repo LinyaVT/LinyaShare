@@ -49,6 +49,30 @@ Open **http://localhost:3000** -- the setup wizard will guide you through admin 
 
 ---
 
+## Screenshots
+
+<div align="center">
+
+| Login | Dashboard | Appearance |
+|-------|-----------|------------|
+| ![Login](./docs/img/login.png) | ![Dashboard](./docs/img/dashboard.png) | ![Appearance](./docs/img/appearance.png) |
+
+| Hub (default) | Hub (blue) | Hub (blue-red) |
+|---------------|------------|----------------|
+| ![Hub default](./docs/img/hub_default.png) | ![Hub blue](./docs/img/hub_blue.png) | ![Hub blue-red](./docs/img/hub_blue-red.png) |
+
+| Hub (pink) | Hub (green) | Hub (green-yellow) |
+|------------|-------------|--------------------|
+| ![Hub pink](./docs/img/hub_pink.png) | ![Hub green](./docs/img/hub_green-font.png) | ![Hub green-yellow](./docs/img/hub_green-yellow.png) |
+
+| Hub (mobile) | Appearance (mobile) | Login (mobile) | Dashboard (mobile) |
+|------------------|------------------|----------------|--------------------|
+| ![Hub mobile](./docs/img/hub_mobile.png) | ![Appearance mobile](./docs/img/appearance_moblie.png) | ![Login mobile](./docs/img/login_moblie.png) | ![Dashboard mobile](./docs/img/dashboard_mobile.png) |
+
+</div>
+
+---
+
 ## Features
 
 | Feature | Description |

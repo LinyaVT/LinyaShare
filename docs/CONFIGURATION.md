@@ -145,6 +145,42 @@ export default config
 > [!NOTE]
 > The `dark-*` and `primary-*` colors are used throughout the app via Tailwind classes like `bg-dark-800` and `text-primary-400`.
 
+> [!TIP]
+> Since v1.1 the `primary-*` palette is driven by CSS variables and can be changed at runtime from **Admin → Settings → Appearance** (no rebuild needed).
+
+---
+
+## Appearance / Theme Settings
+
+The look of the instance (accent colors, background, header, fonts) is stored in the `Setting` table under the `theme.*` keys. Configure it from the **Appearance** tab in the admin settings (`/admin/settings`) — changes are previewed live and applied globally to all pages once saved.
+
+| Key | Default | Description |
+|------|---------|-------------|
+| `theme.accentMode` | `single` | `single` (one color) or `gradient` (two colors + direction) |
+| `theme.accentColor` | `#db2777` | Base accent color (single mode) |
+| `theme.accentFrom` / `theme.accentTo` | `#ec4899` / `#db2777` | Gradient start/end colors |
+| `theme.gradientDirection` | `135deg` | Gradient direction — adjustable via slider (0–360°) or `radial` |
+| `theme.backgroundType` | `particles` | `particles` / `solid` / `gradient` / `none` |
+| `theme.backgroundColor` | `#0a0a0f` | Background color (solid mode) |
+| `theme.backgroundFrom` / `theme.backgroundTo` | `#0a0a0f` / `#11111a` | Background gradient colors |
+| `theme.backgroundDirection` | `135deg` | Background gradient direction — slider or `radial` |
+| `theme.headerSticky` | `true` | `true` = sticky header, `false` = normal |
+| `theme.headerStyle` | `blur` | `blur` / `solid` / `transparent` |
+| `theme.fontBody` | `Inter` | Body font (Google Fonts) |
+| `theme.fontHeading` | `Orbitron` | Heading + logo font |
+
+### How it works
+
+- `src/lib/theme.ts` resolves the settings into a validated `ThemeConfig` (whitelisted colors, directions and fonts) and generates CSS variables (e.g. `--primary-500`, `--accent-gradient`, `--background-image`).
+- `src/app/layout.tsx` reads the settings server-side and inlines a `:root` style block — no flash of the default theme.
+- Tailwind's `primary-*` palette maps to those CSS variables, so a single change re-themes the whole app (buttons, links, icons, glows, particles, OG images).
+
+### Advanced: colors and gradients
+
+- **Simple color**: pick one accent color — the full shade ramp (50–900) is derived automatically.
+- **Complex gradient**: enable gradient mode, choose `from`/`to` colors and a direction (including `radial`) for buttons, the logo gradient and accent glows.
+- All values are sanitized: colors must be valid `#rrggbb` hex, directions come from a whitelist, fonts from a whitelist.
+
 ---
 
 ## tsconfig.json

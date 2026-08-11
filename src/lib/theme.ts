@@ -1,0 +1,407 @@
+// ──────────────────────────────────────────────────────────
+// THEME ENGINE
+// ──────────────────────────────────────────────────────────
+// Das Theme wird als `theme.*` Settings in der Datenbank gespeichert,
+// von `resolveTheme()` zu einer valide Struktur aufgelöst und von
+// `computeCssVars()` in CSS-Variablen übersetzt.
+// Die Datei ist rein (keine Node/Next-Imports) → Server & Client nutzbar.
+
+// ──────────────────────────────────────────────────────────
+// DEFAULT THEME
+// ──────────────────────────────────────────────────────────
+
+export interface ThemeConfig {
+  accentMode: "single" | "gradient"
+  accentColor: string
+  accentFrom: string
+  accentTo: string
+  gradientDirection: string
+  backgroundType: "particles" | "solid" | "gradient" | "none"
+  backgroundColor: string
+  backgroundFrom: string
+  backgroundTo: string
+  backgroundDirection: string
+  headerSticky: boolean
+  headerStyle: "blur" | "solid" | "transparent"
+  fontBody: string
+  fontHeading: string
+}
+
+export const DEFAULT_THEME: ThemeConfig = {
+  accentMode: "single",
+  accentColor: "#db2777",
+  accentFrom: "#ec4899",
+  accentTo: "#db2777",
+  gradientDirection: "135deg",
+  backgroundType: "particles",
+  backgroundColor: "#0a0a0f",
+  backgroundFrom: "#0a0a0f",
+  backgroundTo: "#11111a",
+  backgroundDirection: "135deg",
+  headerSticky: true,
+  headerStyle: "blur",
+  fontBody: "Inter",
+  fontHeading: "Orbitron",
+}
+
+// ──────────────────────────────────────────────────────────
+// WHITELISTS (Sanitization)
+// ──────────────────────────────────────────────────────────
+
+const ACCENT_MODES = new Set(["single", "gradient"])
+const BACKGROUND_TYPES = new Set(["particles", "solid", "gradient", "none"])
+const HEADER_STYLES = new Set(["blur", "solid", "transparent"])
+
+export const GRADIENT_DIRECTIONS = [
+  "135deg",
+  "45deg",
+  "90deg",
+  "180deg",
+  "to right",
+  "to left",
+  "to top",
+  "to bottom",
+  "to top right",
+  "to top left",
+  "to bottom right",
+  "to bottom left",
+  "radial",
+]
+
+export function isGradientDirection(v: string): boolean {
+  if (v === "radial") return true
+  if (GRADIENT_DIRECTIONS.includes(v)) return true
+  const m = /^(\d{1,3})deg$/.exec(v)
+  if (!m) return false
+  const deg = parseInt(m[1], 10)
+  return deg >= 0 && deg <= 360
+}
+
+const HEX_RE = /^#[0-9a-fA-F]{6}$/
+const isHex = (v?: string): v is string => !!v && HEX_RE.test(v)
+
+// ──────────────────────────────────────────────────────────
+// FONT MAP (Google Fonts, runtime-geladen via <link>)
+// ──────────────────────────────────────────────────────────
+
+export interface FontEntry {
+  label: string
+  family: string
+  url: string
+}
+
+export const FONT_MAP: Record<string, FontEntry> = {
+  Inter: {
+    label: "Inter",
+    family: "'Inter', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap",
+  },
+  Orbitron: {
+    label: "Orbitron",
+    family: "'Orbitron', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap",
+  },
+  Poppins: {
+    label: "Poppins",
+    family: "'Poppins', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap",
+  },
+  Roboto: {
+    label: "Roboto",
+    family: "'Roboto', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap",
+  },
+  "Open Sans": {
+    label: "Open Sans",
+    family: "'Open Sans', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap",
+  },
+  Montserrat: {
+    label: "Montserrat",
+    family: "'Montserrat', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap",
+  },
+  "Space Grotesk": {
+    label: "Space Grotesk",
+    family: "'Space Grotesk', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap",
+  },
+  Raleway: {
+    label: "Raleway",
+    family: "'Raleway', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800&display=swap",
+  },
+  Ubuntu: {
+    label: "Ubuntu",
+    family: "'Ubuntu', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap",
+  },
+  "DM Sans": {
+    label: "DM Sans",
+    family: "'DM Sans', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap",
+  },
+  "Bebas Neue": {
+    label: "Bebas Neue",
+    family: "'Bebas Neue', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
+  },
+  "IBM Plex Sans": {
+    label: "IBM Plex Sans",
+    family: "'IBM Plex Sans', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap",
+  },
+  "JetBrains Mono": {
+    label: "JetBrains Mono",
+    family: "'JetBrains Mono', monospace",
+    url: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
+  },
+  Lora: {
+    label: "Lora",
+    family: "'Lora', serif",
+    url: "https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap",
+  },
+  Merriweather: {
+    label: "Merriweather",
+    family: "'Merriweather', serif",
+    url: "https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&display=swap",
+  },
+  "Playfair Display": {
+    label: "Playfair Display",
+    family: "'Playfair Display', serif",
+    url: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&display=swap",
+  },
+  "Nunito Sans": {
+    label: "Nunito Sans",
+    family: "'Nunito Sans', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap",
+  },
+  "Source Sans 3": {
+    label: "Source Sans 3",
+    family: "'Source Sans 3', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap",
+  },
+  Manrope: {
+    label: "Manrope",
+    family: "'Manrope', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap",
+  },
+  Outfit: {
+    label: "Outfit",
+    family: "'Outfit', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+  },
+  Sora: {
+    label: "Sora",
+    family: "'Sora', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap",
+  },
+  Archivo: {
+    label: "Archivo",
+    family: "'Archivo', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap",
+  },
+  "Exo 2": {
+    label: "Exo 2",
+    family: "'Exo 2', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&display=swap",
+  },
+  Rajdhani: {
+    label: "Rajdhani",
+    family: "'Rajdhani', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap",
+  },
+  Audiowide: {
+    label: "Audiowide",
+    family: "'Audiowide', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Audiowide&display=swap",
+  },
+  Righteous: {
+    label: "Righteous",
+    family: "'Righteous', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Righteous&display=swap",
+  },
+  Bungee: {
+    label: "Bungee",
+    family: "'Bungee', sans-serif",
+    url: "https://fonts.googleapis.com/css2?family=Bungee&display=swap",
+  },
+  "Press Start 2P": {
+    label: "Press Start 2P",
+    family: "'Press Start 2P', cursive",
+    url: "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap",
+  },
+}
+
+// ──────────────────────────────────────────────────────────
+// COLOR MATH
+// ──────────────────────────────────────────────────────────
+
+export interface RGB {
+  r: number
+  g: number
+  b: number
+}
+
+export const DEFAULT_RGB: RGB = { r: 236, g: 72, b: 153 }
+
+export function hexToRgb(hex: string): RGB {
+  const clean = hex.replace("#", "").trim()
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return DEFAULT_RGB
+  const n = parseInt(clean, 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+
+export function toTriplet(c: RGB): string {
+  return `${c.r} ${c.g} ${c.b}`
+}
+
+export function hexTriplet(hex: string): string {
+  return toTriplet(hexToRgb(hex))
+}
+
+export function rgbaFromHex(hex: string, alpha: number): string {
+  const { r, g, b } = hexToRgb(hex)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function mix(c: RGB, target: RGB, ratio: number): RGB {
+  return {
+    r: Math.round(c.r + (target.r - c.r) * ratio),
+    g: Math.round(c.g + (target.g - c.g) * ratio),
+    b: Math.round(c.b + (target.b - c.b) * ratio),
+  }
+}
+
+const WHITE: RGB = { r: 255, g: 255, b: 255 }
+const BLACK: RGB = { r: 0, g: 0, b: 0 }
+
+// Light shades (50-400): mix toward white
+const RAMP_WHITE: Record<number, number> = { 50: 0.88, 100: 0.76, 200: 0.62, 300: 0.45, 400: 0.22 }
+// Dark shades (600-900): mix toward black
+const RAMP_BLACK: Record<number, number> = { 600: 0.12, 700: 0.25, 800: 0.38, 900: 0.5 }
+
+// ──────────────────────────────────────────────────────────
+// RESOLVE THEME (settings map -> ThemeConfig)
+// ──────────────────────────────────────────────────────────
+
+export function resolveTheme(settings: Record<string, string> | undefined): ThemeConfig {
+  const s = settings || {}
+  const get = (key: string, fallback: string) => {
+    const v = s[`theme.${key}`]
+    return v === undefined || v === null || v === "" ? fallback : v
+  }
+
+  const accentMode = ACCENT_MODES.has(get("accentMode", DEFAULT_THEME.accentMode)) ? get("accentMode", DEFAULT_THEME.accentMode) as ThemeConfig["accentMode"] : "single"
+  const backgroundType = BACKGROUND_TYPES.has(get("backgroundType", "particles")) ? get("backgroundType", "particles") as ThemeConfig["backgroundType"] : "particles"
+  const headerStyle = HEADER_STYLES.has(get("headerStyle", "blur")) ? get("headerStyle", "blur") as ThemeConfig["headerStyle"] : "blur"
+
+  const gradientDirection = isGradientDirection(get("gradientDirection", DEFAULT_THEME.gradientDirection)) ? get("gradientDirection", DEFAULT_THEME.gradientDirection) : DEFAULT_THEME.gradientDirection
+  const backgroundDirection = isGradientDirection(get("backgroundDirection", DEFAULT_THEME.backgroundDirection)) ? get("backgroundDirection", DEFAULT_THEME.backgroundDirection) : DEFAULT_THEME.backgroundDirection
+
+  const fontBody = FONT_MAP[get("fontBody", "Inter")] ? get("fontBody", "Inter") : "Inter"
+  const fontHeading = FONT_MAP[get("fontHeading", "Orbitron")] ? get("fontHeading", "Orbitron") : "Orbitron"
+
+  return {
+    accentMode,
+    accentColor: isHex(get("accentColor", DEFAULT_THEME.accentColor)) ? get("accentColor", DEFAULT_THEME.accentColor) : DEFAULT_THEME.accentColor,
+    accentFrom: isHex(get("accentFrom", DEFAULT_THEME.accentFrom)) ? get("accentFrom", DEFAULT_THEME.accentFrom) : DEFAULT_THEME.accentFrom,
+    accentTo: isHex(get("accentTo", DEFAULT_THEME.accentTo)) ? get("accentTo", DEFAULT_THEME.accentTo) : DEFAULT_THEME.accentTo,
+    gradientDirection,
+    backgroundType,
+    backgroundColor: isHex(get("backgroundColor", DEFAULT_THEME.backgroundColor)) ? get("backgroundColor", DEFAULT_THEME.backgroundColor) : DEFAULT_THEME.backgroundColor,
+    backgroundFrom: isHex(get("backgroundFrom", DEFAULT_THEME.backgroundFrom)) ? get("backgroundFrom", DEFAULT_THEME.backgroundFrom) : DEFAULT_THEME.backgroundFrom,
+    backgroundTo: isHex(get("backgroundTo", DEFAULT_THEME.backgroundTo)) ? get("backgroundTo", DEFAULT_THEME.backgroundTo) : DEFAULT_THEME.backgroundTo,
+    backgroundDirection,
+    headerSticky: get("headerSticky", "true") !== "false",
+    headerStyle,
+    fontBody,
+    fontHeading,
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// GRADIENT BUILDER
+// ──────────────────────────────────────────────────────────
+
+function buildGradient(kind: "linear" | "radial", direction: string, from: string, to: string): string {
+  if (kind === "radial" || direction === "radial") {
+    return `radial-gradient(circle at center, ${from}, ${to})`
+  }
+  return `linear-gradient(${direction}, ${from}, ${to})`
+}
+
+// ──────────────────────────────────────────────────────────
+// COMPUTE CSS VARS
+// ──────────────────────────────────────────────────────────
+
+export function computeCssVars(theme: ThemeConfig): Record<string, string> {
+  const baseHex = theme.accentMode === "single" ? theme.accentColor : theme.accentFrom
+  const base = hexToRgb(baseHex)
+  const vars: Record<string, string> = {}
+
+  // Primary ramp from base accent color
+  for (const [shade, ratio] of Object.entries(RAMP_WHITE)) {
+    vars[`--primary-${shade}`] = toTriplet(mix(base, WHITE, ratio))
+  }
+  vars["--primary-500"] = toTriplet(base)
+  for (const [shade, ratio] of Object.entries(RAMP_BLACK)) {
+    vars[`--primary-${shade}`] = toTriplet(mix(base, BLACK, ratio))
+  }
+
+  // Accent gradient (used by gradient-text, buttons, progress bars, …)
+  const accentGradient =
+    theme.accentMode === "gradient"
+      ? buildGradient(theme.gradientDirection === "radial" ? "radial" : "linear", theme.gradientDirection, theme.accentFrom, theme.accentTo)
+      : buildGradient(theme.gradientDirection === "radial" ? "radial" : "linear", theme.gradientDirection === "radial" ? "radial" : "135deg", `rgb(var(--primary-400))`, `rgb(var(--primary-600))`)
+
+  vars["--accent-direction"] = theme.gradientDirection
+  vars["--accent-gradient"] = accentGradient
+
+  // Background
+  let bgImage = "none"
+  let bgColor = theme.backgroundColor
+  let bgAttachment = "scroll"
+
+  if (theme.backgroundType === "particles") {
+    bgImage =
+      `radial-gradient(ellipse at 15% 80%, ${rgbaFromHex(baseHex, 0.08)} 0%, transparent 50%), ` +
+      `radial-gradient(ellipse at 85% 20%, ${rgbaFromHex(baseHex, 0.06)} 0%, transparent 50%)`
+    bgColor = DEFAULT_THEME.backgroundColor
+  } else if (theme.backgroundType === "gradient") {
+    bgImage = buildGradient(theme.backgroundDirection === "radial" ? "radial" : "linear", theme.backgroundDirection, theme.backgroundFrom, theme.backgroundTo)
+    bgAttachment = "fixed"
+    bgColor = theme.backgroundFrom
+  }
+
+  vars["--background-image"] = bgImage
+  vars["--background-color"] = bgColor
+  vars["--background-attachment"] = bgAttachment
+
+  // Particle color (RGB triplet, read by AnimatedBackground)
+  vars["--particle-color"] = toTriplet(base)
+
+  // Fonts
+  vars["--font-body"] = FONT_MAP[theme.fontBody]?.family || FONT_MAP.Inter.family
+  vars["--font-heading"] = FONT_MAP[theme.fontHeading]?.family || FONT_MAP.Orbitron.family
+
+  return vars
+}
+
+// ──────────────────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────────────────
+
+export function cssVarsToString(vars: Record<string, string>): string {
+  return Object.entries(vars)
+    .map(([key, value]) => `${key}:${value};`)
+    .join("")
+}
+
+export function themeToDataAttributes(theme: ThemeConfig): Record<string, string> {
+  return {
+    "data-header": theme.headerSticky ? "sticky" : "static",
+    "data-header-style": theme.headerStyle,
+    "data-bg-type": theme.backgroundType,
+  }
+}

@@ -1,14 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Orbitron } from "next/font/google"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Settings, Shield, LogOut, Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-
-const orbitron = Orbitron({ subsets: ["latin"], weight: "700" })
 
 interface HeaderProps {
   title?: string
@@ -57,7 +54,7 @@ export default function Header({ title = "LinyaShare", showAdminNav = false, adm
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className={`${orbitron.className} text-xl font-bold gradient-text cursor-pointer`}
+                className={`font-heading text-xl font-bold gradient-text cursor-pointer`}
                 onClick={() => router.push("/")}
               >
                 {siteName}

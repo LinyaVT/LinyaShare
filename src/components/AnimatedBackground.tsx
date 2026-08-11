@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
+import type { ThemeConfig } from "@/lib/theme"
 
 // ──────────────────────────────────────────────────────────
 // PARTICLE TYPES
@@ -18,15 +19,45 @@ interface Particle {
   speed: number
 }
 
+interface RGB {
+  r: number
+  g: number
+  b: number
+}
+
 // ──────────────────────────────────────────────────────────
 // ANIMATED BACKGROUND COMPONENT
 // ──────────────────────────────────────────────────────────
-export default function AnimatedBackground() {
+export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const mouseRef = useRef({ x: -9999, y: -9999 })
   const animationIdRef = useRef<number>(0)
   const timeRef = useRef<number>(0)
+  const colorRef = useRef<RGB>({ r: 236, g: 72, b: 153 })
+  const enabledRef = useRef((theme?.backgroundType ?? "particles") === "particles")
+  const [enabled, setEnabled] = useState(enabledRef.current)
+
+  // Farb- & Aktiv-Sync: liest CSS-Variablen + data-attribut vom <html>
+  // (so reagiert die Vorschau im Admin-Settings live auf Änderungen)
+  const syncFromDom = useCallback(() => {
+    const root = document.documentElement
+
+    const raw = getComputedStyle(root).getPropertyValue("--particle-color").trim()
+    if (raw) {
+      const parts = raw.split(/\s+/).map(Number)
+      if (parts.length >= 3 && parts.slice(0, 3).every((n) => !isNaN(n))) {
+        colorRef.current = { r: parts[0], g: parts[1], b: parts[2] }
+      }
+    }
+
+    const type = root.dataset.bgType
+    const next = type ? type === "particles" : (theme?.backgroundType ?? "particles") === "particles"
+    if (next !== enabledRef.current) {
+      enabledRef.current = next
+      setEnabled(next)
+    }
+  }, [theme?.backgroundType])
 
   const initParticles = useCallback((width: number, height: number) => {
     const count = Math.min(400, Math.max(200, Math.floor((width * height) / 5000)))
@@ -66,6 +97,7 @@ export default function AnimatedBackground() {
     const mouse = mouseRef.current
     const now = Date.now()
     timeRef.current = now
+    const col = colorRef.current
 
     // ── Update & Draw Particles ──
     for (let i = 0; i < particles.length; i++) {
@@ -108,14 +140,14 @@ export default function AnimatedBackground() {
       // Draw particle
       ctx.beginPath()
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(236, 72, 153, ${p.alpha})`
+      ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${p.alpha})`
       ctx.fill()
 
       // Leichter Glow um grössere Partikel
       if (p.size > 3) {
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size * 1.8, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(236, 72, 153, ${p.alpha * 0.15})`
+        ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${p.alpha * 0.15})`
         ctx.fill()
       }
     }
@@ -145,7 +177,7 @@ export default function AnimatedBackground() {
           ctx.beginPath()
           ctx.moveTo(a.x, a.y)
           ctx.lineTo(b.x, b.y)
-          ctx.strokeStyle = `rgba(236, 72, 153, ${Math.min(lineAlpha + mouseBoost, 0.5)})`
+          ctx.strokeStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${Math.min(lineAlpha + mouseBoost, 0.5)})`
           ctx.stroke()
         }
       }
@@ -175,6 +207,15 @@ export default function AnimatedBackground() {
   }, [initParticles])
 
   useEffect(() => {
+    syncFromDom()
+
+    const intervalId = setInterval(syncFromDom, 400)
+    return () => clearInterval(intervalId)
+  }, [syncFromDom])
+
+  useEffect(() => {
+    if (!enabled) return
+
     handleResize()
     window.addEventListener("resize", handleResize)
     window.addEventListener("mousemove", (e) => {
@@ -192,13 +233,15 @@ export default function AnimatedBackground() {
       window.removeEventListener("resize", handleResize)
       cancelAnimationFrame(animationIdRef.current)
     }
-  }, [handleResize, draw])
+  }, [enabled, handleResize, draw])
+
+  if (!enabled) return null
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 0 }}
+      style={{ zIndex: -1 }}
       aria-hidden="true"
     />
   )

@@ -97,7 +97,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange, item
             disabled={page === "..."}
             className={`hidden sm:flex min-w-[40px] h-10 rounded-lg text-sm font-medium transition-all items-center justify-center ${
               page === currentPage
-                ? "bg-primary-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)]"
+                ? "bg-primary-500 text-white shadow-[0_0_10px_rgb(var(--primary-500)/0.3)]"
                 : page === "..."
                 ? "bg-transparent text-dark-600 cursor-default"
                 : "bg-dark-800/60 text-dark-300 hover:text-white hover:bg-dark-700/50"

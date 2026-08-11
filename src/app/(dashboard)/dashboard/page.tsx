@@ -106,7 +106,7 @@ function UploadProgressBar({
         <motion.div
           animate={{ width: `${Math.min(percent, 100)}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 shadow-[0_0_10px_rgba(236,72,153,0.3)]"
+          className="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.3)]"
         />
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-dark-400">
@@ -511,7 +511,7 @@ export default function DashboardPage() {
                   ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                   : isMediumUsage
                   ? "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
-                  : "bg-gradient-to-r from-primary-600 to-primary-400 shadow-[0_0_10px_rgba(236,72,153,0.3)]"
+                  : "bg-gradient-to-r from-primary-600 to-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.3)]"
               }`}
             />
           </div>
@@ -588,7 +588,7 @@ export default function DashboardPage() {
                 onClick={() => setViewMode("list")}
                 className={`p-2 rounded-lg transition-all ${
                   viewMode === "list"
-                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgba(236,72,153,0.1)]"
+                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
                     : "text-dark-400 hover:text-white hover:bg-dark-700/50"
                 }`}
                 title="List view"
@@ -599,7 +599,7 @@ export default function DashboardPage() {
                 onClick={() => setViewMode("grid")}
                 className={`p-2 rounded-lg transition-all ${
                   viewMode === "grid"
-                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgba(236,72,153,0.1)]"
+                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
                     : "text-dark-400 hover:text-white hover:bg-dark-700/50"
                 }`}
                 title="Grid view"
@@ -653,7 +653,7 @@ export default function DashboardPage() {
                   onClick={() => setFileTypeFilter(opt.value)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-primary-500/20 text-primary-400 border border-primary-500/30 shadow-[0_0_10px_rgba(236,72,153,0.1)]"
+                      ? "bg-primary-500/20 text-primary-400 border border-primary-500/30 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
                       : "bg-dark-800/40 text-dark-400 border border-dark-600/20 hover:border-dark-500/40 hover:text-white"
                   }`}
                 >

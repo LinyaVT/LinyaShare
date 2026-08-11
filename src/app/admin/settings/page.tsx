@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -8,10 +8,16 @@ import {
   Check, X, Globe, Mail, MessageCircle, ExternalLink, Users,
   HardDrive, ToggleLeft, FileText, Shield, Save, Settings2,
   ChevronDown, ChevronUp, HelpCircle, RotateCcw, Settings,
+  Palette, Paintbrush, Image as ImageIcon, LayoutGrid, Type, Sparkles,
 } from "lucide-react"
 import Header from "@/components/Header"
 import { useToast } from "@/components/Toast"
 import ConfirmDialog from "@/components/ConfirmDialog"
+import {
+  DEFAULT_THEME, FONT_MAP, computeCssVars,
+  resolveTheme, themeToDataAttributes,
+} from "@/lib/theme"
+import type { ThemeConfig } from "@/lib/theme"
 
 const DEFAULT_PRIVACY = `
 > [!INFO]
@@ -203,7 +209,7 @@ Use blockquotes with special markers:
 - Block: Use triple backticks
 `
 
-type Section = "general" | "registration" | "storage" | "support" | "legal"
+type Section = "general" | "registration" | "storage" | "support" | "legal" | "appearance"
 
 const SECTIONS: { key: Section; label: string; icon: any }[] = [
   { key: "general", label: "General", icon: Settings2 },
@@ -211,7 +217,131 @@ const SECTIONS: { key: Section; label: string; icon: any }[] = [
   { key: "storage", label: "Storage", icon: HardDrive },
   { key: "support", label: "Support", icon: Mail },
   { key: "legal", label: "Legal", icon: Shield },
+  { key: "appearance", label: "Appearance", icon: Palette },
 ]
+
+const PRESET_ACCENTS = [
+  "#db2777", "#a855f7", "#8b5cf6", "#3b82f6", "#06b6d4", "#22c55e",
+  "#84cc16", "#f59e0b", "#ef4444", "#f97316", "#e11d48", "#14b8a6",
+]
+
+// ──────────────────────────────────────────────────────────
+// APPEARANCE UI HELPERS
+// ──────────────────────────────────────────────────────────
+function SegBtn({ options, value, onChange, label }: {
+  options: { value: string; label: string }[]
+  value: string
+  onChange: (v: string) => void
+  label?: string
+}) {
+  return (
+    <div>
+      {label && <p className="text-xs font-medium text-dark-300 mb-2">{label}</p>}
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = opt.value === value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                active
+                  ? "bg-primary-500/20 text-primary-400 border-primary-500/30"
+                  : "bg-dark-800/40 text-dark-400 border-dark-600/20 hover:border-dark-500/40 hover:text-white"
+              }`}
+            >
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const colorValue = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#ec4899"
+  return (
+    <div>
+      <p className="text-xs font-medium text-dark-300 mb-2">{label}</p>
+      <div className="flex items-center gap-3">
+        <input
+          type="color"
+          value={colorValue}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-10 h-10 rounded-lg border border-dark-600/30 bg-dark-800/40 cursor-pointer shrink-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 min-w-0 bg-dark-800/30 border border-dark-500/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500/40 focus:ring-2 focus:ring-primary-500/5"
+        />
+      </div>
+    </div>
+  )
+}
+
+function SelectField({ label, value, onChange, options }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-dark-300 mb-2">{label}</p>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-dark-800/30 border border-dark-500/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500/40"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value} className="bg-dark-800 text-white">{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+function DirectionSlider({ label, value, onChange }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const isRadial = value === "radial"
+  const deg = isRadial ? 135 : parseInt(value) || 135
+  return (
+    <div>
+      <p className="text-xs font-medium text-dark-300 mb-2">{label}</p>
+      <div className="flex items-center gap-4">
+        <input
+          type="range"
+          min={0}
+          max={360}
+          step={5}
+          value={deg}
+          onChange={(e) => onChange(`${e.target.value}deg`)}
+          className="flex-1 min-w-0 accent-primary-500"
+          aria-label={label}
+        />
+        <span className="text-sm text-white font-mono w-12 text-right tabular-nums">{deg}°</span>
+        <button
+          type="button"
+          onClick={() => onChange(isRadial ? `${deg}deg` : "radial")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all shrink-0 ${
+            isRadial
+              ? "bg-primary-500/20 text-primary-400 border-primary-500/30"
+              : "bg-dark-800/40 text-dark-400 border-dark-600/20 hover:border-dark-500/40 hover:text-white"
+          }`}
+        >
+          Radial
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminSettingsPage() {
   const { data: session, status } = useSession()
@@ -223,6 +353,9 @@ export default function AdminSettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("general")
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [appearance, setAppearance] = useState<ThemeConfig>({ ...DEFAULT_THEME })
+  const [savingAppearance, setSavingAppearance] = useState(false)
+  const [showResetAppearanceConfirm, setShowResetAppearanceConfirm] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
@@ -234,7 +367,79 @@ export default function AdminSettingsPage() {
     const res = await fetch("/api/admin/settings")
     const data = await res.json()
     setSettings(data.settings || {})
+    setAppearance(resolveTheme(data.settings || {}))
+    previewReadyRef.current = true
     setLoading(false)
+  }
+
+  // ── Appearance: Live-Vorschau ──
+  const previewReadyRef = useRef(false)
+
+  function applyAppearancePreview(theme: ThemeConfig) {
+    const root = document.documentElement
+    const vars = computeCssVars(theme)
+    for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v)
+    const attrs = themeToDataAttributes(theme)
+    for (const [k, v] of Object.entries(attrs)) root.setAttribute(k, v)
+  }
+
+  // Vorschau anwenden, sobald sich das Appearance-State ändert (nach dem Laden)
+  useEffect(() => {
+    if (previewReadyRef.current) applyAppearancePreview(appearance)
+  }, [appearance])
+
+  function updateAppearance(patch: Partial<ThemeConfig>) {
+    setAppearance((prev) => ({ ...prev, ...patch }))
+  }
+
+  async function handleSaveAppearance() {
+    setSavingAppearance(true)
+    try {
+      const payload = Object.entries(appearance).map(([key, value]) => ({
+        key: `theme.${key}`,
+        value: String(value),
+      }))
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: payload }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toastError(data.error || "Failed to save appearance")
+        return
+      }
+      toastSuccess("Appearance saved")
+    } catch {
+      toastError("Failed to save appearance")
+    } finally {
+      setSavingAppearance(false)
+    }
+  }
+
+  async function handleResetAppearance() {
+    setShowResetAppearanceConfirm(false)
+    setAppearance({ ...DEFAULT_THEME })
+    applyAppearancePreview({ ...DEFAULT_THEME })
+    try {
+      const payload = Object.entries(DEFAULT_THEME).map(([key, value]) => ({
+        key: `theme.${key}`,
+        value: String(value),
+      }))
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: payload }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toastError(data.error || "Reset failed")
+        return
+      }
+      toastSuccess("Appearance reset to defaults")
+    } catch {
+      toastError("Failed to reset appearance")
+    }
   }
 
   async function handleSave(key: string, value: string) {
@@ -578,6 +783,228 @@ export default function AdminSettingsPage() {
                 </>
               )}
 
+              {/* ──────────────── APPEARANCE ──────────────── */}
+              {activeSection === "appearance" && (
+                <>
+                  {/* Live Preview */}
+                  <div className="glass-card p-6 border-primary-500/20">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-primary-400" /> Live Preview
+                    </h2>
+                    <p className="text-dark-400 text-sm mb-5">
+                      Changes are applied instantly. Save to make them permanent for all visitors.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
+                      <span className="gradient-text font-heading text-2xl font-bold">LinyaShare</span>
+                      <button type="button" className="btn-primary !py-2 !px-4 text-sm">Example Button</button>
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-lg" style={{ background: "var(--accent-gradient)" }} />
+                        <div className="w-10 h-10 rounded-lg" style={{ background: "rgb(var(--primary-400))" }} />
+                        <div className="w-10 h-10 rounded-lg" style={{ background: "rgb(var(--primary-500))" }} />
+                        <div className="w-10 h-10 rounded-lg" style={{ background: "rgb(var(--primary-600))" }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Accent Color & Gradient */}
+                  <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Paintbrush className="w-5 h-5 text-primary-400" /> Accent Color & Gradient
+                    </h2>
+                    <div className="space-y-4">
+                      <SegBtn
+                        label="Mode"
+                        options={[
+                          { value: "single", label: "Single Color" },
+                          { value: "gradient", label: "Gradient" },
+                        ]}
+                        value={appearance.accentMode}
+                        onChange={(v) => updateAppearance({ accentMode: v as ThemeConfig["accentMode"] })}
+                      />
+
+                      {appearance.accentMode === "single" ? (
+                        <>
+                          <ColorField
+                            label="Accent color"
+                            value={appearance.accentColor}
+                            onChange={(v) => updateAppearance({ accentColor: v })}
+                          />
+                          <div>
+                            <p className="text-xs font-medium text-dark-300 mb-2">Presets</p>
+                            <div className="flex flex-wrap gap-2">
+                              {PRESET_ACCENTS.map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => updateAppearance({ accentColor: c })}
+                                  className={`w-8 h-8 rounded-lg border transition-transform hover:scale-110 ${
+                                    appearance.accentColor.toLowerCase() === c
+                                      ? "border-white ring-2 ring-primary-500/40"
+                                      : "border-white/10"
+                                  }`}
+                                  style={{ background: c }}
+                                  aria-label={c}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <DirectionSlider
+                            label="Gradient direction"
+                            value={appearance.gradientDirection}
+                            onChange={(v) => updateAppearance({ gradientDirection: v })}
+                          />
+                        </>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <ColorField
+                            label="From"
+                            value={appearance.accentFrom}
+                            onChange={(v) => updateAppearance({ accentFrom: v })}
+                          />
+                          <ColorField
+                            label="To"
+                            value={appearance.accentTo}
+                            onChange={(v) => updateAppearance({ accentTo: v })}
+                          />
+                          <div className="sm:col-span-2">
+                            <DirectionSlider
+                              label="Direction"
+                              value={appearance.gradientDirection}
+                              onChange={(v) => updateAppearance({ gradientDirection: v })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Background */}
+                  <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-primary-400" /> Background
+                    </h2>
+                    <div className="space-y-4">
+                      <SegBtn
+                        label="Type"
+                        options={[
+                          { value: "particles", label: "Particles" },
+                          { value: "solid", label: "Solid" },
+                          { value: "gradient", label: "Gradient" },
+                          { value: "none", label: "None" },
+                        ]}
+                        value={appearance.backgroundType}
+                        onChange={(v) => updateAppearance({ backgroundType: v as ThemeConfig["backgroundType"] })}
+                      />
+
+                      {appearance.backgroundType === "solid" && (
+                        <ColorField
+                          label="Background color"
+                          value={appearance.backgroundColor}
+                          onChange={(v) => updateAppearance({ backgroundColor: v })}
+                        />
+                      )}
+
+                      {appearance.backgroundType === "gradient" && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <ColorField
+                            label="From"
+                            value={appearance.backgroundFrom}
+                            onChange={(v) => updateAppearance({ backgroundFrom: v })}
+                          />
+                          <ColorField
+                            label="To"
+                            value={appearance.backgroundTo}
+                            onChange={(v) => updateAppearance({ backgroundTo: v })}
+                          />
+                          <div className="sm:col-span-2">
+                            <DirectionSlider
+                              label="Direction"
+                              value={appearance.backgroundDirection}
+                              onChange={(v) => updateAppearance({ backgroundDirection: v })}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {appearance.backgroundType === "none" && (
+                        <p className="text-dark-400 text-sm">No decorative background. The page stays dark.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Header */}
+                  <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <LayoutGrid className="w-5 h-5 text-primary-400" /> Header
+                    </h2>
+                    <div className="space-y-4">
+                      <SegBtn
+                        label="Behavior"
+                        options={[
+                          { value: "sticky", label: "Sticky" },
+                          { value: "static", label: "Normal" },
+                        ]}
+                        value={appearance.headerSticky ? "sticky" : "static"}
+                        onChange={(v) => updateAppearance({ headerSticky: v === "sticky" })}
+                      />
+                      <SegBtn
+                        label="Style"
+                        options={[
+                          { value: "blur", label: "Blur" },
+                          { value: "solid", label: "Solid" },
+                          { value: "transparent", label: "Transparent" },
+                        ]}
+                        value={appearance.headerStyle}
+                        onChange={(v) => updateAppearance({ headerStyle: v as ThemeConfig["headerStyle"] })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fonts */}
+                  <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Type className="w-5 h-5 text-primary-400" /> Fonts
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <SelectField
+                        label="Body font"
+                        value={appearance.fontBody}
+                        onChange={(v) => updateAppearance({ fontBody: v })}
+                        options={Object.entries(FONT_MAP).map(([k, f]) => ({ value: k, label: f.label }))}
+                      />
+                      <SelectField
+                        label="Heading font"
+                        value={appearance.fontHeading}
+                        onChange={(v) => updateAppearance({ fontHeading: v })}
+                        options={Object.entries(FONT_MAP).map(([k, f]) => ({ value: k, label: f.label }))}
+                      />
+                    </div>
+                    <p className="text-dark-500 text-xs mt-3">
+                      Fonts are loaded from Google Fonts and applied globally. Headings and the logo use the heading font.
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveAppearance}
+                      disabled={savingAppearance}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" /> {savingAppearance ? "Saving..." : "Save Appearance"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowResetAppearanceConfirm(true)}
+                      className="btn-danger flex items-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" /> Reset Appearance
+                    </button>
+                  </div>
+                </>
+              )}
+
             </motion.div>
           </>
         )}
@@ -592,6 +1019,18 @@ export default function AdminSettingsPage() {
           confirmText="Reset"
           cancelText="Cancel"
           variant="danger"
+        />
+
+        {/* Reset Appearance Confirm Dialog */}
+        <ConfirmDialog
+          isOpen={showResetAppearanceConfirm}
+          onClose={() => setShowResetAppearanceConfirm(false)}
+          onConfirm={handleResetAppearance}
+          title="Reset appearance?"
+          message="This will restore the default theme. All other settings stay unchanged."
+          confirmText="Reset"
+          cancelText="Cancel"
+          variant="warning"
         />
       </main>
     </div>

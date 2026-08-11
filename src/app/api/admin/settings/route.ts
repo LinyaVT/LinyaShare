@@ -40,7 +40,24 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const { key, value } = await request.json()
+    const body = await request.json()
+
+    // Bulk-Update: { settings: [{ key, value }, ...] }
+    if (Array.isArray(body?.settings)) {
+      await prisma.$transaction(
+        body.settings.map((s: { key: string; value: string }) =>
+          prisma.setting.upsert({
+            where: { key: s.key },
+            update: { value: s.value },
+            create: { key: s.key, value: s.value },
+          })
+        )
+      )
+      return NextResponse.json({ success: true })
+    }
+
+    // Einzel-Update: { key, value }
+    const { key, value } = body
 
     await prisma.setting.upsert({
       where: { key },

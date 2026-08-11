@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getFileByShareId } from "@/lib/upload"
+import { resolveTheme } from "@/lib/theme"
 
 export async function GET(
   request: NextRequest,
@@ -13,6 +14,20 @@ export async function GET(
     if (!file) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
+
+    // Theme-Akzentfarben laden (OG-Bilder folgen dem Instanz-Theme)
+    let accentFrom = "#ec4899"
+    let accentTo = "#db2777"
+    try {
+      const rows = await prisma.setting.findMany()
+      const map: Record<string, string> = {}
+      rows.forEach((s) => {
+        map[s.key] = s.value
+      })
+      const theme = resolveTheme(map)
+      accentFrom = theme.accentMode === "single" ? theme.accentColor : theme.accentFrom
+      accentTo = theme.accentMode === "single" ? theme.accentColor : theme.accentTo
+    } catch {}
 
     const fileName = file.originalName || file.name
     const fileType = file.type || ""
@@ -27,7 +42,7 @@ export async function GET(
     
     if (hasPassword) {
       // Passwort-geschützt: Schloss-Icon
-      svg = generateLockedSvg(width, height, fileName, uploader)
+      svg = generateLockedSvg(width, height, fileName, uploader, accentFrom, accentTo)
     } else {
       // Dateityp-basiertes SVG
       const isImage = fileType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(fileName)
@@ -35,13 +50,13 @@ export async function GET(
       const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(fileName)
 
       if (isImage) {
-        svg = generateImageSvg(width, height, fileName, uploader)
+        svg = generateImageSvg(width, height, fileName, uploader, accentFrom, accentTo)
       } else if (isVideo) {
-        svg = generateVideoSvg(width, height, fileName, uploader)
+        svg = generateVideoSvg(width, height, fileName, uploader, accentFrom, accentTo)
       } else if (isAudio) {
-        svg = generateAudioSvg(width, height, fileName, uploader)
+        svg = generateAudioSvg(width, height, fileName, uploader, accentFrom, accentTo)
       } else {
-        svg = generateFileSvg(width, height, fileName, fileType, uploader)
+        svg = generateFileSvg(width, height, fileName, fileType, uploader, accentFrom, accentTo)
       }
     }
 
@@ -57,14 +72,14 @@ export async function GET(
   }
 }
 
-function generateLockedSvg(width: number, height: number, fileName: string, uploader: string) {
+function generateLockedSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 40 ? fileName.substring(0, 40) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:${accentFrom};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${accentTo};stop-opacity:1" />
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
@@ -108,14 +123,14 @@ function generateLockedSvg(width: number, height: number, fileName: string, uplo
 </svg>`
 }
 
-function generateImageSvg(width: number, height: number, fileName: string, uploader: string) {
+function generateImageSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:${accentFrom};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${accentTo};stop-opacity:1" />
     </linearGradient>
   </defs>
   
@@ -153,14 +168,14 @@ function generateImageSvg(width: number, height: number, fileName: string, uploa
 </svg>`
 }
 
-function generateVideoSvg(width: number, height: number, fileName: string, uploader: string) {
+function generateVideoSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#581c87;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3b0764;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:${accentFrom};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${accentTo};stop-opacity:1" />
     </linearGradient>
   </defs>
   
@@ -196,14 +211,14 @@ function generateVideoSvg(width: number, height: number, fileName: string, uploa
 </svg>`
 }
 
-function generateAudioSvg(width: number, height: number, fileName: string, uploader: string) {
+function generateAudioSvg(width: number, height: number, fileName: string, uploader: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#065f46;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#064e3b;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:${accentFrom};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${accentTo};stop-opacity:1" />
     </linearGradient>
   </defs>
   
@@ -249,7 +264,7 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
 </svg>`
 }
 
-function generateFileSvg(width: number, height: number, fileName: string, fileType: string, uploader: string) {
+function generateFileSvg(width: number, height: number, fileName: string, fileType: string, uploader: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
   // Bestimme Farbe basierend auf Dateityp
@@ -265,8 +280,8 @@ function generateFileSvg(width: number, height: number, fileName: string, fileTy
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:${accentFrom};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${accentTo};stop-opacity:1" />
     </linearGradient>
   </defs>
   
