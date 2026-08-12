@@ -6,7 +6,7 @@
 
 > Secure file sharing -- self-hosted, password-protected, media-ready.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-ec4899?style=for-the-badge)](https://github.com/LinyaVT/LinyaShare)
+[![Version](https://img.shields.io/badge/version-1.2.0-ec4899?style=for-the-badge)](https://github.com/LinyaVT/LinyaShare)
 [![Node](https://img.shields.io/badge/node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-64748b?style=for-the-badge)](LICENSE)
