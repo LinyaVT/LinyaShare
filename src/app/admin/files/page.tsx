@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import dynamic from "next/dynamic"
 const AnimatePresence = dynamic(() => import("framer-motion").then(mod => mod.AnimatePresence), { ssr: false })
-import { Lock, FolderOpen, Users, AlertTriangle, X, FileText, HardDrive, Download, Calendar, CheckCircle, MoreVertical, FolderArchive, Trash2 } from "lucide-react"
+import { Lock, FolderOpen, Users, AlertTriangle, X, FileText, HardDrive, Download, Eye, Calendar, CheckCircle, MoreVertical, FolderArchive, Trash2 } from "lucide-react"
 import Header from "@/components/Header"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import SearchBar from "@/components/SearchBar"
@@ -360,6 +360,7 @@ export default function AdminFilesPage() {
                             <span className="flex items-center gap-1"><HardDrive className="w-3 h-3" /> {formatSize(file.size)}</span>
                             <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {file.user?.name || "Unknown"}</span>
                             <span className="flex items-center gap-1"><Download className="w-3 h-3" /> {file.downloads} Downloads</span>
+                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {file.views} Views</span>
                             <span className="hidden sm:flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(file.createdAt)}</span>
                             {file.password && <span className="text-primary-400 flex items-center gap-1"><Lock className="w-3 h-3" /> Password</span>}
                           </div>

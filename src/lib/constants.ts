@@ -15,6 +15,7 @@ export const IMPORT_DIR = resolvePath(process.env.IMPORT_DIR, 'data/import');
 
 export const CHUNK_SIZE = 512 * 1024; // 512KB – stays below nginx default (1m) so no proxy config is needed
 export const DEFAULT_STORAGE_LIMIT = 524288000; // 500MB in bytes
+export const MAX_EMBED_SIZE = 50 * 1024 * 1024; // 50MB – größere Media-Dateien bekommen keinen Embed-Link
 
 // Video Extensions
 export const VIDEO_EXTENSIONS = /\.(mp4|webm|avi|mov|mkv|wmv|flv|m4v|mpg|mpeg|3gp|3g2|m2ts|mts|vob|divx|rm|rmvb|ogv|ogm|f4v|f4p)$/i;

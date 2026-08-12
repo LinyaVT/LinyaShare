@@ -15,6 +15,7 @@ export async function GET(
       type: true,
       size: true,
       downloads: true,
+      views: true,
       password: true,
       user: {
         select: { name: true },
@@ -32,6 +33,7 @@ export async function GET(
     type: file.type,
     size: file.size,
     downloads: file.downloads,
+    views: file.views,
     hasPassword: !!file.password,
     uploader: file.user.name,
   })

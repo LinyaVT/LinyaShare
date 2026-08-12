@@ -768,6 +768,9 @@ export default function DashboardPage() {
                           <span className="flex items-center gap-1">
                             <Download className="w-3 h-3" /> {file.downloads} downloads
                           </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> {file.views} views
+                          </span>
                           {file.hasPassword ? (
                             <span className="text-primary-400 flex items-center gap-1">
                               <button
@@ -911,6 +914,9 @@ export default function DashboardPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Download className="w-3 h-3" /> {file.downloads}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> {file.views}
                       </span>
                       {file.hasPassword && (
                         <span className="text-primary-400 flex items-center gap-1">

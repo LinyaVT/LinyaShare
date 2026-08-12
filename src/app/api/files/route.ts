@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { deleteFile } from "@/lib/upload"
+import { MAX_EMBED_SIZE } from "@/lib/constants"
 import bcrypt from "bcryptjs"
 
 export async function GET() {
@@ -20,6 +21,7 @@ export async function GET() {
       size: true,
       shareId: true,
       downloads: true,
+      views: true,
       password: true,
       plainPassword: true,
       createdAt: true,
@@ -33,7 +35,8 @@ export async function GET() {
   return NextResponse.json({
     files: files.map((f) => {
       // Direkter Media-Link mit Dateiendung (endet auf .mp4 etc.) für Discord & Co.
-      const embedUrl = f.isMediaEmbed && !f.password
+      // Nur für Dateien unter 50MB – größere Dateien bekommen keinen Embed-Link.
+      const embedUrl = f.isMediaEmbed && !f.password && f.size < MAX_EMBED_SIZE
         ? `${baseUrl}/api/files/embed/${f.shareId}/${encodeURIComponent(f.originalName)}`
         : undefined
 

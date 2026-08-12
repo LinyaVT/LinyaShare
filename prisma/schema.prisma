@@ -31,6 +31,7 @@ model File {
   userId        String?
   user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   downloads     Int      @default(0)
+  views         Int      @default(0)
   status        String   @default("ACTIVE") // "IMPORT" | "ACTIVE"
   embedUrl      String?
   isMediaEmbed  Boolean  @default(false)

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { motion } from "framer-motion"
-import { Lock, AlertCircle, Download, FileVideo, FileAudio, FileArchive, File, Shield, HardDrive, User, Share2, Music, Image, Film, Package, Code, Binary, Box, Database, Type, FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey } from "lucide-react"
+import { Lock, AlertCircle, Download, Eye, FileVideo, FileAudio, FileArchive, File, Shield, HardDrive, User, Share2, Music, Image, Film, Package, Code, Binary, Box, Database, Type, FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey } from "lucide-react"
 import { formatSize, getFileTypeCategory } from "@/lib/utils"
 
 // ──────────────────────────────────────────────────────────
@@ -69,6 +69,17 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
   const [hasPassword, setHasPassword] = useState(false)
   const [passwordVerified, setPasswordVerified] = useState(false)
 
+  // Verhindert, dass der View mehrfach gezählt wird (StrictMode, Re-Render etc.)
+  const viewCountedRef = useRef(false)
+
+  // View zählen: öffentliche Dateien direkt nach erfolgreichem Laden,
+  // passwortgeschützte erst nach erfolgreicher Freigabe (siehe handleVerifyPassword)
+  const countView = useCallback(() => {
+    if (viewCountedRef.current) return
+    viewCountedRef.current = true
+    fetch(`/api/files/view/${shareId}`, { method: "POST" }).catch(() => {})
+  }, [shareId])
+
   useEffect(() => {
     async function loadInfo() {
       try {
@@ -79,6 +90,8 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
           const pwRequired = data.hasPassword
           setNeedsPassword(pwRequired)
           setHasPassword(pwRequired)
+          // Öffentliche Dateien zählen den View sofort
+          if (!pwRequired) countView()
         } else {
           setError("File not found")
         }
@@ -86,7 +99,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
       setLoading(false)
     }
     loadInfo()
-  }, [shareId])
+  }, [shareId, countView])
 
   // Berechne die Streaming-URL basierend auf Passwort-Status
   const streamingUrl = useMemo(() => {
@@ -150,6 +163,8 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
       }
 
       // Passwort korrekt → Streaming-Vorschau aktivieren
+      // und den View zählen (nur nach erfolgreicher Freigabe)
+      countView()
       setPasswordVerified(true)
       setNeedsPassword(false) // Streaming braucht kein Passwort mehr
     } catch {
@@ -178,6 +193,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
           return
         }
         setPasswordVerified(true)
+        countView()
       }
 
       // Download-URL bauen (Stream-Endpunkt mit ?download=1)
@@ -293,6 +309,13 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
                 <div className="flex-1 min-w-0">
                   <p className="text-dark-500 text-xs uppercase tracking-wider">Downloads</p>
                   <p className="text-white font-medium">{fileInfo?.downloads || 0}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-dark-800/30 rounded-xl px-4 py-3 hover:bg-dark-800/50 transition-colors">
+                <Eye className="w-4 h-4 text-primary-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-dark-500 text-xs uppercase tracking-wider">Views</p>
+                  <p className="text-white font-medium">{fileInfo?.views || 0}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-dark-800/30 rounded-xl px-4 py-3 hover:bg-dark-800/50 transition-colors">
