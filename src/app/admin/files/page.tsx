@@ -49,6 +49,7 @@ export default function AdminFilesPage() {
   // Pagination & Filter
   const [searchQuery, setSearchQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
+  const [userFilter, setUserFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -190,6 +191,7 @@ export default function AdminFilesPage() {
   function resetFilters() {
     setSearchQuery("")
     setTypeFilter("all")
+    setUserFilter("all")
     setDateFilter("all")
     setCurrentPage(1)
   }
@@ -271,11 +273,23 @@ export default function AdminFilesPage() {
                 ],
                 onChange: setDateFilter,
               },
+              {
+                key: "user",
+                label: "User",
+                value: userFilter,
+                options: [
+                  { value: "all", label: "All users" },
+                  { value: "__none__", label: "Without user" },
+                  ...users.map((user) => ({ value: user.id, label: user.name })),
+                ],
+                onChange: setUserFilter,
+              },
             ]}
             onReset={resetFilters}
             activeCount={
               (searchQuery ? 1 : 0) +
               (typeFilter !== "all" ? 1 : 0) +
+              (userFilter !== "all" ? 1 : 0) +
               (dateFilter !== "all" ? 1 : 0)
             }
           />
@@ -317,6 +331,12 @@ export default function AdminFilesPage() {
 
               const matchesType = typeFilter === "all" || getFileTypeCategory(file.type || "", file.originalName || file.name) === typeFilter
 
+              const matchesUser = (() => {
+                if (userFilter === "all") return true
+                if (userFilter === "__none__") return !file.userId
+                return file.userId === userFilter
+              })()
+
               const matchesDate = (() => {
                 if (dateFilter === "all") return true
                 const created = new Date(file.createdAt)
@@ -333,7 +353,7 @@ export default function AdminFilesPage() {
                 return true
               })()
 
-              return matchesSearch && matchesType && matchesDate
+              return matchesSearch && matchesType && matchesUser && matchesDate
             })
 
             const totalPages = Math.ceil(filtered.length / itemsPerPage)

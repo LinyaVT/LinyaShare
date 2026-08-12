@@ -5,6 +5,8 @@ import { motion } from "framer-motion"
 import { Lock, AlertCircle, Download, Eye, FileVideo, FileAudio, FileArchive, File, Shield, HardDrive, Share2, Music, Image, Film, Package, Code, Binary, Box, Database, Type, FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey } from "lucide-react"
 import { formatSize, getFileTypeCategory } from "@/lib/utils"
 import SkeletonLoader from "@/components/SkeletonLoader"
+import ShareBadges from "@/components/ShareBadges"
+import { shouldCountView, markViewCounted } from "@/lib/viewCount"
 
 // ──────────────────────────────────────────────────────────
 // FILE TYPE DETECTION
@@ -132,7 +134,12 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
   const countView = useCallback(() => {
     if (viewCountedRef.current) return
     viewCountedRef.current = true
-    fetch(`/api/files/view/${shareId}`, { method: "POST" }).catch(() => {})
+    if (!shouldCountView(`s:${shareId}`)) return
+    fetch(`/api/files/view/${shareId}`, { method: "POST" })
+      .then((res) => {
+        if (res.ok) markViewCounted(`s:${shareId}`)
+      })
+      .catch(() => {})
   }, [shareId])
 
   useEffect(() => {
@@ -269,7 +276,12 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     }
   }
 
-  if (loading) return <SkeletonLoader variant="share" />
+  if (loading) return (
+    <>
+      <SkeletonLoader variant="share" />
+      <ShareBadges />
+    </>
+  )
 
   if (error && !fileInfo) {
     return (
@@ -280,6 +292,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
           <h1 className="text-2xl font-bold text-white mb-2">File not found</h1>
           <p className="text-dark-400">This link is invalid or the file was deleted.</p>
         </motion.div>
+        <ShareBadges />
       </div>
     )
   }
@@ -289,6 +302,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <ShareBadges />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="glass-card p-6 sm:p-8 max-w-lg w-full relative">
         

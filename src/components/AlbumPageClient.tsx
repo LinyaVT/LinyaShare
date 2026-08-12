@@ -8,6 +8,8 @@ import {
 } from "lucide-react"
 import { formatSize, formatDate, getFileTypeCategory } from "@/lib/utils"
 import { FileTypeIcon } from "@/components/FileTypeIcon"
+import ShareBadges from "@/components/ShareBadges"
+import { shouldCountView, markViewCounted } from "@/lib/viewCount"
 
 type AlbumFile = {
   id: string
@@ -108,7 +110,8 @@ export default function AlbumPageClient({ shareId }: { shareId: string }) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/albums/${shareId}`)
+        const count = shouldCountView(`a:${shareId}`)
+        const res = await fetch(`/api/albums/${shareId}${count ? "" : "?count=0"}`)
         const data = await res.json()
         if (data.exists) {
           setAlbum(data)
@@ -116,6 +119,7 @@ export default function AlbumPageClient({ shareId }: { shareId: string }) {
         } else {
           setError("Gallery not found")
         }
+        if (count) markViewCounted(`a:${shareId}`)
       } catch {
         setError("Failed to load gallery")
       }
@@ -169,7 +173,12 @@ export default function AlbumPageClient({ shareId }: { shareId: string }) {
     return "image"
   }, [isImage])
 
-  if (loading) return <GallerySkeleton />
+  if (loading) return (
+    <>
+      <GallerySkeleton />
+      <ShareBadges />
+    </>
+  )
 
   if (error && !album) {
     return (
@@ -180,6 +189,7 @@ export default function AlbumPageClient({ shareId }: { shareId: string }) {
           <h1 className="text-2xl font-bold text-white mb-2">Gallery not found</h1>
           <p className="text-dark-400">This link is invalid or the gallery was deleted.</p>
         </motion.div>
+        <ShareBadges />
       </div>
     )
   }
@@ -191,6 +201,7 @@ export default function AlbumPageClient({ shareId }: { shareId: string }) {
 
   return (
     <div className="min-h-screen p-4 sm:p-6 relative">
+      <ShareBadges />
       <div className="max-w-6xl mx-auto">
         {/* Password gate */}
         <AnimatePresence>

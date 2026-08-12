@@ -40,8 +40,10 @@ export async function GET(
 
   const cover = files.find((f) => isEmbeddableMedia({ type: f.type, originalName: f.originalName })) || null;
 
-  // View-Zähler (fire-and-forget, nicht die Antwort blockieren)
-  incrementAlbumViews(shareId);
+  // View-Zähler (fire-and-forget) – übersprungen bei ?count=0 (Browser-Cache der Clients)
+  if (request.nextUrl.searchParams.get("count") !== "0") {
+    incrementAlbumViews(shareId);
+  }
 
   return NextResponse.json({
     exists: true,
