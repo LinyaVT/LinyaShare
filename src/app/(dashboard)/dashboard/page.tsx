@@ -700,8 +700,8 @@ export default function DashboardPage() {
             </select>
           </div>
 
-          {/* File Type Filter Row */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* File Type Filter — Desktop: Icon-Buttons, Mobile: Dropdown */}
+          <div className="hidden md:flex flex-wrap items-center gap-2">
             <Filter className="w-4 h-4 text-dark-400 shrink-0" />
             {FILE_TYPE_OPTIONS.map((opt) => {
               const Icon = ICON_MAP[opt.icon]
@@ -721,6 +721,21 @@ export default function DashboardPage() {
                 </button>
               )
             })}
+          </div>
+
+          {/* Mobile: File-Type als kompaktes Dropdown */}
+          <div className="md:hidden relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
+            <select
+              value={fileTypeFilter}
+              onChange={(e) => setFileTypeFilter(e.target.value)}
+              className="input-field text-sm py-2 pl-10 w-full"
+              aria-label="Filter by file type"
+            >
+              {FILE_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
