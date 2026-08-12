@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { removeFileFromDisk } from "@/lib/file-storage"
 
 export async function GET() {
   const session = await auth()
@@ -70,15 +71,12 @@ export async function DELETE() {
   try {
     const userId = (session.user as any).id
 
-    // Delete all files from disk
+    // Delete all files from disk (zentrale Pfad-Logik, inkl. User-Ordner)
     const files = await prisma.file.findMany({ where: { userId } })
-    const fs = await import("fs/promises")
-    const path = await import("path")
-    const { UPLOAD_DIR } = await import("@/lib/constants")
 
     for (const file of files) {
       try {
-        await fs.unlink(path.resolve(UPLOAD_DIR, file.name))
+        await removeFileFromDisk(file)
       } catch {}
     }
 

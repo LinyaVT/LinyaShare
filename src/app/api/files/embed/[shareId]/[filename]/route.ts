@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
-import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
 import { nodeStreamToWeb } from "@/lib/node-stream"
-import path from "path"
+import { findFileOnDisk } from "@/lib/file-storage"
+import { buildFileHeaders, buildContentDisposition, isSafeInlineType } from "@/lib/file-security"
 import fs from "fs"
 
 // Path-Sanitizing für shareId
@@ -41,17 +41,16 @@ export async function GET(
     }
 
     const mimeType = file.type || "application/octet-stream"
+    const rawName = file.originalName || file.name
 
-    // Datei auf Disk finden
-    const uploadPath = path.resolve(UPLOAD_DIR, file.name);
-    const importPath = path.resolve(IMPORT_DIR, file.name);
+    // Aktive Inhalte (SVG, HTML, JS, XML, etc.) nie als Embed ausliefern
+    if (!isSafeInlineType(mimeType, rawName)) {
+      return NextResponse.json({ error: "Blocked" }, { status: 403 })
+    }
 
-    let filePath: string;
-    if (fs.existsSync(uploadPath)) {
-      filePath = uploadPath;
-    } else if (fs.existsSync(importPath)) {
-      filePath = importPath;
-    } else {
+    // Datei auf Disk finden (zentrale Pfad-Logik, inkl. User-Ordner)
+    const filePath = findFileOnDisk(file)
+    if (!filePath) {
       return NextResponse.json({ error: "File not found on disk" }, { status: 404 })
     }
 
@@ -82,22 +81,20 @@ export async function GET(
     const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 })
     const readableStream = nodeStreamToWeb(nodeStream)
 
-    // Embed: Immer inline liefern (wie public/ Datei)
-    const encodedFilename = encodeURIComponent(file.originalName || file.name)
-    const contentDisposition = `inline; filename="${file.originalName || file.name}"; filename*=UTF-8''${encodedFilename}`
+    // Embed: Nur sichere, verifizierte Typen werden inline ausgeliefert (isSafeInlineType oben geprüft)
+    const contentDisposition = buildContentDisposition(rawName, "inline")
 
-    const headers: Record<string, string> = {
-      "Content-Type": mimeType,
-      "Content-Length": contentLength.toString(),
-      "Content-Disposition": contentDisposition,
-      "Accept-Ranges": "bytes",
-      "Cache-Control": "public, max-age=3600",
-      "Access-Control-Allow-Origin": "*",
-    }
-
-    if (rangeHeader) {
-      headers["Content-Range"] = `bytes ${start}-${end}/${fileSize}`
-    }
+    const headers = buildFileHeaders(
+      mimeType,
+      contentLength,
+      contentDisposition,
+      {
+        "Cache-Control": "public, max-age=3600",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Security-Policy": "sandbox",
+        ...(rangeHeader ? { "Content-Range": `bytes ${start}-${end}/${fileSize}` } : {}),
+      }
+    )
 
     return new NextResponse(readableStream, {
       status: statusCode,

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
 import { auth } from "@/lib/auth"
 import bcrypt from "bcryptjs"
-import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
 import { nodeStreamToWeb } from "@/lib/node-stream"
 import { logStatEvent } from "@/lib/stats"
-import path from "path"
+import { findFileOnDisk } from "@/lib/file-storage"
+import { buildFileHeaders, buildContentDisposition, getDeliveryDisposition } from "@/lib/file-security"
 import fs from "fs"
 
 
@@ -50,16 +50,9 @@ export async function GET(
       }).catch(() => {}) // Fehler ignorieren (non-critical)
     }
 
-    // Datei auf Disk finden
-    const uploadPath = path.resolve(UPLOAD_DIR, file.name);
-    const importPath = path.resolve(IMPORT_DIR, file.name);
-
-    let filePath: string;
-    if (fs.existsSync(uploadPath)) {
-      filePath = uploadPath;
-    } else if (fs.existsSync(importPath)) {
-      filePath = importPath;
-    } else {
+    // Datei auf Disk finden (zentrale Pfad-Logik, inkl. User-Ordner)
+    const filePath = findFileOnDisk(file)
+    if (!filePath) {
       return NextResponse.json({ error: "File not found on disk" }, { status: 404 })
     }
 
@@ -71,11 +64,13 @@ export async function GET(
       logStatEvent("DOWNLOAD", { fileId: file.id, userId: file.userId || undefined, size: fileSize })
     }
 
-    // Korrekten Dateinamen für Content-Disposition kodieren
-    const encodedFilename = encodeURIComponent(file.originalName || file.name);
-    const contentDisposition = isDownload
-      ? `attachment; filename="${file.originalName || file.name}"; filename*=UTF-8''${encodedFilename}`
-      : `inline; filename="${file.originalName || file.name}"; filename*=UTF-8''${encodedFilename}`;
+    // Content-Disposition: Download → attachment, sonst nur inline wenn sicherer Typ
+    const disposition = getDeliveryDisposition(
+      file.type || "application/octet-stream",
+      file.originalName || file.name,
+      isDownload
+    )
+    const contentDisposition = buildContentDisposition(file.originalName || file.name, disposition)
 
     // Range-Request Support für echtes Video/Audio Streaming
     const rangeHeader = request.headers.get("range")
@@ -101,17 +96,15 @@ export async function GET(
     const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 }) // 64KB chunks
     const readableStream = nodeStreamToWeb(nodeStream)
 
-    const headers: Record<string, string> = {
-      "Content-Type": file.type || "application/octet-stream",
-      "Content-Length": contentLength.toString(),
-      "Content-Disposition": contentDisposition,
-      "Accept-Ranges": "bytes",
-      "Cache-Control": "no-cache, no-transform",
-    }
-
-    if (rangeHeader) {
-      headers["Content-Range"] = `bytes ${start}-${end}/${fileSize}`
-    }
+    const headers = buildFileHeaders(
+      file.type || "application/octet-stream",
+      contentLength,
+      contentDisposition,
+      {
+        "Cache-Control": "no-cache, no-transform",
+        ...(rangeHeader ? { "Content-Range": `bytes ${start}-${end}/${fileSize}` } : {}),
+      }
+    )
 
     return new NextResponse(readableStream, {
       status: statusCode,

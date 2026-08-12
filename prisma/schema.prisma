@@ -21,23 +21,26 @@ model User {
 }
 
 model File {
-  id            String   @id @default(cuid())
-  name          String
-  originalName  String
-  type          String
-  size          Float
-  password      String?
-  plainPassword String?
-  shareId       String   @unique
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  downloads     Int      @default(0)
-  views         Int      @default(0)
-  status        String   @default("ACTIVE") // "IMPORT" | "ACTIVE"
-  embedUrl      String?
-  isMediaEmbed  Boolean  @default(false)
-  events        StatEvent[]
-  createdAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  originalName    String
+  type            String
+  size            Float
+  password        String?
+  plainPassword   String?
+  shareId         String   @unique
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  downloads       Int      @default(0)
+  views           Int      @default(0)
+  status          String   @default("ACTIVE") // "IMPORT" | "ACTIVE"
+  embedUrl        String?
+  isMediaEmbed    Boolean  @default(false)
+  category        String?  // "video" | "audio" | "image" | "executable" | "code" | "pdf" | ...
+  isExecutable    Boolean  @default(false)
+  storageLocation String   @default("disk") // "disk" | "blob" | "s3" (Zukunft)
+  events          StatEvent[]
+  createdAt       DateTime @default(now())
 }
 
 model StatEvent {

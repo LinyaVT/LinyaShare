@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { removeFileFromDisk } from "@/lib/file-storage"
 
 export async function GET() {
   const session = await auth()
@@ -34,13 +35,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Datei nicht gefunden" }, { status: 404 })
     }
 
-    // Delete from disk
-    const fs = await import("fs/promises")
-    const path = await import("path")
-    const { UPLOAD_DIR } = await import("@/lib/constants")
-    try {
-      await fs.unlink(path.resolve(UPLOAD_DIR, file.name))
-    } catch {}
+    // Delete from disk (zentrale Pfad-Logik, inkl. User-Ordner)
+    await removeFileFromDisk(file)
 
     await prisma.file.delete({ where: { id: fileId } })
     return NextResponse.json({ success: true })

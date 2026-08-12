@@ -1,5 +1,5 @@
 import { pipeline } from 'stream/promises';
-import { mkdir, rename, unlink, stat, readdir } from 'fs/promises';
+import { mkdir, rename, unlink, stat, readdir, open, chmod } from 'fs/promises';
 import { existsSync, createWriteStream } from 'fs';
 import { Readable } from 'stream';
 import path from 'path';
@@ -8,6 +8,9 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateEmbedUrl, isSupportedMediaType } from './embed-generator';
 import { logStatEvent } from './stats';
+import { UPLOAD_DIR, IMPORT_DIR } from './constants'
+import { ensureUserUploadDir, moveImportToUploads, removeFileFromDisk, getImportPath, findFileOnDisk } from './file-storage'
+import { detectFileType, isPotentiallyExecutable, getFileCategory, isSafeInlineType } from './file-security'
 
 // Extended File types for embed fields
 type FileWithEmbed = {
@@ -27,8 +30,6 @@ type FileWithEmbed = {
   isMediaEmbed?: boolean | null;
 }
 
-import { UPLOAD_DIR, IMPORT_DIR } from './constants'
-import { getMimeTypeFromExtension } from './utils'
 
 
 // ──────────────────────────────────────────────────────────
@@ -79,7 +80,21 @@ export async function saveFileChunk(
 }
 
 // ──────────────────────────────────────────────────────────
-// FINALIZE: User Upload → /data/uploads + status ACTIVE
+// MAGIC BYTES HELPER
+// ──────────────────────────────────────────────────────────
+async function readFileMagicBytes(filePath: string): Promise<Buffer> {
+  const fh = await open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(512);
+    const { bytesRead } = await fh.read(buffer, 0, 512, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await fh.close();
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// FINALIZE: User Upload → /data/uploads/<userId> + status ACTIVE
 // ──────────────────────────────────────────────────────────
 export async function finalizeUserUpload(
   uploadId: string,
@@ -94,13 +109,20 @@ export async function finalizeUserUpload(
   const safeDiskName = sanitizeFileName(originalName);
   const tempPath = path.join(UPLOAD_DIR, `${uploadId}.tmp`);
   const finalName = `${uuidv4()}${path.extname(safeDiskName)}`;
-  const finalPath = path.join(UPLOAD_DIR, finalName);
 
   if (!existsSync(tempPath)) {
     throw new Error(`Upload incomplete: temporary file not found. Please try again.`);
   }
 
+  // User-Ordner anlegen (0755) und Datei dorthin verschieben
+  const userDir = await ensureUserUploadDir(userId);
+  const finalPath = path.join(userDir, finalName);
+
   await rename(tempPath, finalPath);
+
+  // Datei-Rechte: 0644 (keine Execute-Bits → kein Shellcode ausführbar)
+  await chmod(finalPath, 0o644).catch(() => {});
+
   const stats = await stat(finalPath);
 
   // Check user storage limit
@@ -117,18 +139,27 @@ export async function finalizeUserUpload(
     throw new Error('Storage limit exceeded');
   }
 
+  // Magic-Bytes-Verifikation: Echten Dateityp ermitteln (Client-MIME ignorieren)
+  const magicBytes = await readFileMagicBytes(finalPath);
+  const detected = detectFileType(magicBytes);
+
+  // Kategorie + Executable-Flag berechnen
+  const category = getFileCategory(detected.mimeType, originalName);
+  const isExecutable = isPotentiallyExecutable(detected.mimeType, originalName);
+
   // Hash password if provided
   const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
 
   const shareId = uuidv4();
-  const isMedia = isSupportedMediaType(mimeType, originalName);
+  // SVG & aktive Inhalte nie als Media-Embed markieren (isSafeInlineType schließt SVG aus)
+  const isMedia = isSupportedMediaType(detected.mimeType, originalName) && isSafeInlineType(detected.mimeType, originalName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
   const record = await prisma.file.create({
     data: {
       name: finalName,
       originalName, // originalName stays UNCHANGED (spaces, umlauts, etc.)
-      type: mimeType || 'application/octet-stream',
+      type: detected.mimeType || 'application/octet-stream',
       size: stats.size,
       shareId,
       userId,
@@ -137,6 +168,9 @@ export async function finalizeUserUpload(
       status: 'ACTIVE',
       embedUrl,
       isMediaEmbed: isMedia,
+      category,
+      isExecutable,
+      storageLocation: 'disk',
     },
   });
 
@@ -167,23 +201,39 @@ export async function finalizeImportUpload(
   }
 
   await rename(tempPath, finalPath);
+
+  // Datei-Rechte: 0644 (keine Execute-Bits)
+  await chmod(finalPath, 0o644).catch(() => {});
+
   const stats = await stat(finalPath);
 
+  // Magic-Bytes-Verifikation: Echten Dateityp ermitteln (Client-MIME ignorieren)
+  const magicBytes = await readFileMagicBytes(finalPath);
+  const detected = detectFileType(magicBytes);
+
+  // Kategorie + Executable-Flag berechnen
+  const category = getFileCategory(detected.mimeType, originalName);
+  const isExecutable = isPotentiallyExecutable(detected.mimeType, originalName);
+
   const shareId = uuidv4();
-  const isMedia = isSupportedMediaType(mimeType, originalName);
+  // SVG & aktive Inhalte nie als Media-Embed markieren (isSafeInlineType schließt SVG aus)
+  const isMedia = isSupportedMediaType(detected.mimeType, originalName) && isSafeInlineType(detected.mimeType, originalName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
   const record = await prisma.file.create({
     data: {
       name: finalName,
       originalName,
-      type: mimeType || 'application/octet-stream',
+      type: detected.mimeType || 'application/octet-stream',
       size: stats.size,
       shareId,
       userId: userId || null,
       status: 'IMPORT',
       embedUrl,
       isMediaEmbed: isMedia,
+      category,
+      isExecutable,
+      storageLocation: 'disk',
     },
   });
 
@@ -213,19 +263,15 @@ export async function claimFile(fileId: string, userId: string) {
     throw new Error('Storage limit exceeded');
   }
 
-  await ensureDir(UPLOAD_DIR);
+  // Import-Datei in den User-Ordner verschieben
+  await moveImportToUploads(file, userId);
 
-  const importPath = path.join(IMPORT_DIR, file.name);
-  const uploadPath = path.join(UPLOAD_DIR, file.name);
-
-  if (!existsSync(importPath)) {
-    throw new Error('Import file not found on disk');
-  }
-
-  await rename(importPath, uploadPath);
+  // Datei-Rechte: 0644 (keine Execute-Bits)
+  const userDirPath = path.join(UPLOAD_DIR, userId, file.name);
+  await chmod(userDirPath, 0o644).catch(() => {});
 
   // Check if file is a media type and update embed URL
-  const isMedia = isSupportedMediaType(file.type, file.originalName)
+  const isMedia = isSupportedMediaType(file.type, file.originalName) && isSafeInlineType(file.type, file.originalName)
   const embedUrl = isMedia && !file.embedUrl ? generateEmbedUrl(file.shareId, file.originalName) : file.embedUrl || null
 
   return await prisma.file.update({
@@ -262,31 +308,44 @@ export async function claimOrphanedFile(fileName: string, userId: string) {
     throw new Error('Storage limit exceeded');
   }
 
-  await ensureDir(UPLOAD_DIR);
-
   const ext = path.extname(safeName);
   const finalName = `${uuidv4()}${ext}`;
-  const uploadPath = path.join(UPLOAD_DIR, finalName);
+
+  // Datei in den User-Ordner verschieben
+  const userDir = await ensureUserUploadDir(userId);
+  const uploadPath = path.join(userDir, finalName);
 
   await rename(importPath, uploadPath);
 
+  // Datei-Rechte: 0644 (keine Execute-Bits)
+  await chmod(uploadPath, 0o644).catch(() => {});
+
   const shareId = uuidv4();
-  
-  const mimeType = getMimeTypeFromExtension(ext)
-  const isMedia = isSupportedMediaType(mimeType, safeName)
-  const embedUrl = isMedia ? generateEmbedUrl(shareId, safeName) : null
+
+  // Magic-Bytes-Verifikation für orphaned Dateien
+  const magicBytes = await readFileMagicBytes(uploadPath);
+  const detected = detectFileType(magicBytes);
+
+  // SVG & aktive Inhalte nie als Media-Embed markieren
+  const isMedia = isSupportedMediaType(detected.mimeType, safeName) && isSafeInlineType(detected.mimeType, safeName);
+  const embedUrl = isMedia ? generateEmbedUrl(shareId, safeName) : null;
+  const category = getFileCategory(detected.mimeType, safeName);
+  const isExecutable = isPotentiallyExecutable(detected.mimeType, safeName);
 
   return await prisma.file.create({
     data: {
       name: finalName,
       originalName: safeName,
-      type: mimeType,
+      type: detected.mimeType,
       size: stats.size,
       shareId,
       userId,
       status: 'ACTIVE',
       embedUrl,
       isMediaEmbed: isMedia,
+      category,
+      isExecutable,
+      storageLocation: 'disk',
     },
   });
 }
@@ -302,13 +361,8 @@ export async function deleteFile(fileId: string, userId?: string) {
     throw new Error('Unauthorized');
   }
 
-  const importPath = path.join(IMPORT_DIR, file.name);
-  const uploadPath = path.join(UPLOAD_DIR, file.name);
-
-  try {
-    if (existsSync(importPath)) await unlink(importPath);
-    else if (existsSync(uploadPath)) await unlink(uploadPath);
-  } catch { /* ignore */ }
+  // Zentrale Lösch-Funktion (findet Datei in Uploads/Import, inkl. User-Ordner)
+  await removeFileFromDisk(file);
 
   await prisma.file.delete({ where: { id: fileId } });
 }
