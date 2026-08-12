@@ -93,9 +93,19 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const { fileId } = await request.json()
-    await deleteFile(fileId, (session.user as any).id)
-    return NextResponse.json({ success: true })
+    const { fileId, fileIds } = await request.json()
+    const ids = fileIds && Array.isArray(fileIds) ? fileIds : fileId ? [fileId] : []
+
+    if (ids.length === 0) {
+      return NextResponse.json({ error: "No file IDs provided" }, { status: 400 })
+    }
+
+    const results = await Promise.allSettled(
+      ids.map((id: string) => deleteFile(id, (session.user as any).id))
+    )
+    const deleted = results.filter((r) => r.status === "fulfilled").length
+
+    return NextResponse.json({ success: deleted > 0, deleted })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }

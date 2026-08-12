@@ -14,6 +14,7 @@ import {
 import type { LucideIcon } from "lucide-react"
 import Header from "@/components/Header"
 import ConfirmDialog from "@/components/ConfirmDialog"
+import { useToast } from "@/components/Toast"
 import Pagination from "@/components/Pagination"
 import { formatSize, formatDate, getFileTypeCategory, isEmbeddableMedia } from "@/lib/utils"
 import { DEFAULT_STORAGE_LIMIT } from "@/lib/constants"
@@ -180,6 +181,7 @@ function FilePreview({ file, isExpanded, onToggle }: {
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { success: toastSuccess, error: toastError } = useToast()
   const [files, setFiles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [albums, setAlbums] = useState<AlbumData[]>([])
@@ -267,14 +269,21 @@ export default function DashboardPage() {
 
   async function handleUpdatePassword(fileId: string) {
     if (!editingPassword.trim()) return
-    await fetch("/api/files", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileId, password: editingPassword }),
-    })
-    setEditingPasswordId(null)
-    setEditingPassword("")
-    loadFiles()
+    try {
+      const res = await fetch("/api/files", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, password: editingPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to update password")
+      toastSuccess("Password updated")
+      setEditingPasswordId(null)
+      setEditingPassword("")
+      loadFiles()
+    } catch (e: any) {
+      toastError(e.message || "Failed to update password")
+    }
   }
 
   async function handleRemovePassword(fileId: string) {
@@ -284,12 +293,19 @@ export default function DashboardPage() {
       message: "Are you sure you want to remove the password protection from this file?",
       variant: "warning",
       onConfirm: async () => {
-        await fetch("/api/files", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId, password: "" }),
-        })
-        loadFiles()
+        try {
+          const res = await fetch("/api/files", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileId, password: "" }),
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || "Failed to remove password")
+          toastSuccess("Password protection removed")
+          loadFiles()
+        } catch (e: any) {
+          toastError(e.message || "Failed to remove password")
+        }
       }
     })
   }
@@ -301,13 +317,61 @@ export default function DashboardPage() {
       message: "Are you sure you want to delete this file permanently? This action cannot be undone.",
       variant: "danger",
       onConfirm: async () => {
-        await fetch("/api/files", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId })
-        })
-        loadFiles()
-        loadAlbums()
+        try {
+          const res = await fetch("/api/files", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileId })
+          })
+          const data = await res.json()
+          if (!res.ok || data.success === false) {
+            throw new Error(data.error || "Failed to delete file")
+          }
+          toastSuccess("File deleted")
+          loadFiles()
+          loadAlbums()
+        } catch (e: any) {
+          toastError(e.message || "Failed to delete file")
+        }
+      }
+    })
+  }
+
+  async function handleDeleteSelected() {
+    const ids = selectedFileIds
+    if (ids.length === 0) return
+
+    const names = files
+      .filter((f: any) => ids.includes(f.id))
+      .map((f: any) => f.originalName)
+
+    const preview = names.slice(0, 3).map((n: string) => `"${n}"`).join(", ")
+    const more = names.length > 3 ? ` and ${names.length - 3} more` : ""
+
+    setConfirmDialog({
+      isOpen: true,
+      title: `Delete ${ids.length} ${ids.length === 1 ? "file" : "files"} permanently?`,
+      message: `Are you sure you want to delete ${ids.length === 1 ? "this file" : "these files"} permanently? This action cannot be undone. ${preview}${more}.`,
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/files", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileIds: ids })
+          })
+          const data = await res.json()
+          if (!res.ok || data.success === false) {
+            throw new Error(data.error || "Failed to delete selected files")
+          }
+          toastSuccess(`${data.deleted ?? ids.length} ${(data.deleted ?? ids.length) === 1 ? "file" : "files"} deleted`)
+          setSelectionMode(false)
+          setSelectedFileIds([])
+          loadFiles()
+          loadAlbums()
+        } catch (e: any) {
+          toastError(e.message || "Failed to delete files")
+        }
       }
     })
   }
@@ -319,14 +383,25 @@ export default function DashboardPage() {
       message: `Are you sure you want to delete "${album.name}"? The shared gallery link will stop working. Your files are not deleted.`,
       variant: "danger",
       onConfirm: async () => {
-        await fetch(`/api/albums/${album.shareId}`, { method: "DELETE" })
-        loadAlbums()
+        try {
+          const res = await fetch(`/api/albums/${album.shareId}`, { method: "DELETE" })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || "Failed to delete album")
+          toastSuccess("Album deleted")
+          loadAlbums()
+        } catch (e: any) {
+          toastError(e.message || "Failed to delete album")
+        }
       }
     })
   }
 
   function copyToClipboard(text: string, id: string) {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(text).then(() => {
+      toastSuccess("Copied to clipboard")
+    }).catch(() => {
+      toastError("Could not copy to clipboard")
+    })
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
@@ -339,7 +414,8 @@ export default function DashboardPage() {
     setAlbumModal({ open: true, mode: "create", preselectedFileIds: fileIds, album: null })
   }
 
-  function handleAlbumSaved() {
+  function handleAlbumSaved(mode: "create" | "edit") {
+    toastSuccess(mode === "create" ? "Album created" : "Album updated")
     loadAlbums()
     loadFiles()
     setAlbumModal((prev) => ({ ...prev, open: false, preselectedFileIds: [] }))
@@ -481,7 +557,7 @@ export default function DashboardPage() {
                     ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)] border border-primary-500/30"
                     : "bg-dark-800/60 border border-dark-600/30 text-dark-400 hover:text-white hover:bg-dark-700/50"
                 }`}
-                title={selectionMode ? "Exit selection mode" : "Select files to create an album"}
+                title={selectionMode ? "Exit selection mode" : "Select files"}
               >
                 {selectionMode ? <ListChecks className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
                 <span className="hidden md:inline text-xs font-medium">{selectionMode ? "Done" : "Select"}</span>
@@ -541,6 +617,13 @@ export default function DashboardPage() {
                     className="btn-primary text-sm flex items-center gap-2"
                   >
                     <Images className="w-4 h-4" /> Share as album
+                  </button>
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={selectedFileIds.length === 0}
+                    className="btn-danger text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
                   </button>
                   <button
                     onClick={() => { setSelectionMode(false); setSelectedFileIds([]) }}

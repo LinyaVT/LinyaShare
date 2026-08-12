@@ -37,7 +37,7 @@ interface AlbumModalProps {
   preselectedFileIds?: string[]
   album?: AlbumData
   onClose: () => void
-  onSaved: () => void
+  onSaved: (mode: "create" | "edit") => void
 }
 
 export default function AlbumModal({
@@ -158,7 +158,7 @@ export default function AlbumModal({
         if (!res.ok) throw new Error(data.error || "Failed to update album")
       }
 
-      onSaved()
+      onSaved(mode)
       onClose()
     } catch (err: any) {
       setError(err?.message || "Failed to save album")
