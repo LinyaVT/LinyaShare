@@ -60,6 +60,12 @@ export default function Header({ title = "LinyaShare", showAdminNav = false, adm
               >
                 {siteName}
               </motion.span>
+              {/* Build-Version aus package.json */}
+              {process.env.NEXT_PUBLIC_APP_VERSION && (
+                <span className="text-xs font-medium text-dark-400 bg-dark-800/40 border border-dark-600/30 px-2 py-0.5 rounded-full">
+                  v{process.env.NEXT_PUBLIC_APP_VERSION}
+                </span>
+              )}
               {showAdminNav && (
                 <span className="text-xs font-semibold bg-primary-500/15 text-primary-400 border border-primary-500/30 px-2.5 py-0.5 rounded-full">
                   Admin

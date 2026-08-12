@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 
-type SkeletonVariant = "list" | "stats" | "cards" | "settings"
+type SkeletonVariant = "list" | "stats" | "cards" | "settings" | "share"
 
 export default function SkeletonLoader({
   variant = "list",
@@ -11,6 +11,44 @@ export default function SkeletonLoader({
   variant?: SkeletonVariant
   count?: number
 }) {
+  if (variant === "share") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-6 sm:p-8 max-w-lg w-full"
+        >
+          {/* Icon-Kachel */}
+          <div className="text-center mb-6">
+            <div className="w-20 h-20 bg-dark-700 rounded-2xl animate-pulse mx-auto mb-5" />
+            <div className="h-6 bg-dark-700 rounded-lg w-3/4 max-w-xs mx-auto animate-pulse mb-2.5" />
+            <div className="h-3 bg-dark-700 rounded w-16 mx-auto animate-pulse" />
+          </div>
+
+          {/* Stat-Tiles */}
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl bg-dark-700/60 h-[74px] animate-pulse" />
+            ))}
+          </div>
+
+          {/* Shared by / Protection */}
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            <div className="h-[62px] rounded-xl bg-dark-700/60 animate-pulse" />
+            <div className="h-[62px] rounded-xl bg-dark-700/60 animate-pulse" />
+          </div>
+
+          {/* Preview-Block */}
+          <div className="h-40 rounded-xl bg-dark-700/60 animate-pulse mb-6" />
+
+          {/* Download-Button */}
+          <div className="h-11 rounded-xl bg-dark-700 animate-pulse" />
+        </motion.div>
+      </div>
+    )
+  }
+
   if (variant === "stats") {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">

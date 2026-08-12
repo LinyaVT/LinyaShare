@@ -50,6 +50,22 @@ Open **http://localhost:3000** -- the setup wizard will guide you through admin 
 
 ---
 
+## Versioning
+
+The version shown in the header (`v{version}`) is taken automatically from `package.json`
+at build time (`NEXT_PUBLIC_APP_VERSION`). To release a new version, bump the version with npm:
+
+```bash
+npm version patch   # 1.0.0 -> 1.0.1 (fixes)
+npm version minor   # 1.0.1 -> 1.1.0 (new features)
+npm version major   # 1.1.0 -> 2.0.0 (breaking changes)
+```
+
+This updates `package.json`, the lockfile, and creates a matching Git tag. After a rebuild
+the new version appears in the header everywhere (public pages, dashboard, admin).
+
+---
+
 ## Screenshots
 
 <div align="center">
