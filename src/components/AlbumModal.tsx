@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Images, X, Lock, Unlock } from "lucide-react"
+import { Images, X, Lock, Unlock, Search } from "lucide-react"
 import { formatSize } from "@/lib/utils"
 import { FileTypeIcon } from "@/components/FileTypeIcon"
 
@@ -58,6 +58,7 @@ export default function AlbumModal({
   const [addIds, setAddIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     if (!isOpen) return
@@ -78,6 +79,7 @@ export default function AlbumModal({
       setAddIds([])
     }
     setError("")
+    setSearchQuery("")
   }, [isOpen, mode, album, preselectedFileIds])
 
   const containedIds = album?.items.map((i) => i.fileId) || []
@@ -86,6 +88,17 @@ export default function AlbumModal({
   const visibleContained = album?.items.filter((i) => !removedSet.has(i.fileId)) || []
   const visibleContainedIds = new Set(visibleContained.map((i) => i.fileId))
   const availableFiles = files.filter((f) => !visibleContainedIds.has(f.id) && !addedSet.has(f.id))
+
+  // Suche (case-insensitive) für alle Datei-Listen
+  const query = searchQuery.trim().toLowerCase()
+  const matchesQuery = (name: string) => !query || name.toLowerCase().includes(query)
+
+  const filteredCreateFiles = files.filter((f) => matchesQuery(f.originalName))
+  const filteredContained = visibleContained.filter((i) => matchesQuery(i.originalName))
+  const filteredAddFiles = availableFiles.filter((f) => matchesQuery(f.originalName))
+  const filteredAddedFiles = addIds
+    .map((id) => files.find((f) => f.id === id))
+    .filter((f): f is AlbumPickerFile => !!f && matchesQuery(f.originalName))
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -277,6 +290,26 @@ export default function AlbumModal({
               />
             </div>
 
+            {/* Suchfeld für die Dateiauswahl */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search files..."
+                className="input-field text-sm py-2 pl-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             {/* Create: file picker */}
             {mode === "create" && (
               <div className="mb-4">
@@ -285,7 +318,10 @@ export default function AlbumModal({
                   {files.length === 0 && (
                     <p className="text-sm text-dark-500 py-4 text-center">No files available</p>
                   )}
-                  {files.map((file) => {
+                  {files.length > 0 && filteredCreateFiles.length === 0 && (
+                    <p className="text-sm text-dark-500 py-4 text-center">No files match "{searchQuery}"</p>
+                  )}
+                  {filteredCreateFiles.map((file) => {
                     const checked = selectedIds.includes(file.id)
                     return (
                       <label
@@ -319,7 +355,10 @@ export default function AlbumModal({
                     {visibleContained.length === 0 && addIds.length === 0 && (
                       <p className="text-sm text-dark-500 py-3 text-center">No files</p>
                     )}
-                    {visibleContained.map((item) => (
+                    {(visibleContained.length > 0 || addIds.length > 0) && filteredContained.length === 0 && filteredAddedFiles.length === 0 && (
+                      <p className="text-sm text-dark-500 py-3 text-center">No files match "{searchQuery}"</p>
+                    )}
+                    {filteredContained.map((item) => (
                       <div key={item.fileId} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-dark-800/30 border border-dark-600/20">
                         <FileTypeIcon type={item.type} name={item.originalName} className="w-4 h-4 text-primary-400 shrink-0" />
                         <span className="text-sm text-white truncate flex-1">{item.originalName}</span>
@@ -333,19 +372,15 @@ export default function AlbumModal({
                         </button>
                       </div>
                     ))}
-                    {addIds.map((id) => {
-                      const file = files.find((f) => f.id === id)
-                      if (!file) return null
-                      return (
-                        <div key={id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-500/10 border border-primary-500/40">
-                          <FileTypeIcon type={file.type} name={file.originalName} className="w-4 h-4 text-primary-400 shrink-0" />
-                          <span className="text-sm text-white truncate flex-1">{file.originalName}</span>
-                          <button onClick={() => undoRemoval(id)} className="text-dark-400 hover:text-white p-1 rounded" title="Undo add">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )
-                    })}
+                    {filteredAddedFiles.map((file) => (
+                      <div key={file.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-500/10 border border-primary-500/40">
+                        <FileTypeIcon type={file.type} name={file.originalName} className="w-4 h-4 text-primary-400 shrink-0" />
+                        <span className="text-sm text-white truncate flex-1">{file.originalName}</span>
+                        <button onClick={() => undoRemoval(file.id)} className="text-dark-400 hover:text-white p-1 rounded" title="Undo add">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -355,7 +390,10 @@ export default function AlbumModal({
                     {availableFiles.length === 0 && (
                       <p className="text-sm text-dark-500 py-3 text-center">All your files are already in this album</p>
                     )}
-                    {availableFiles.map((file) => {
+                    {availableFiles.length > 0 && filteredAddFiles.length === 0 && (
+                      <p className="text-sm text-dark-500 py-3 text-center">No files match "{searchQuery}"</p>
+                    )}
+                    {filteredAddFiles.map((file) => {
                       const checked = addIds.includes(file.id)
                       return (
                         <label
