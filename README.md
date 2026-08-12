@@ -169,6 +169,8 @@ This project is licensed under the AGPLv3 License. See [LICENSE](LICENSE) for de
 
 <div align="center">
 
+I had Copilot generate a FUCKING commit message—it listed itself as a co-author—and now it's here without messing anything up. Thanks, GitHub...
+
 ![alt text](./docs/img/footer.png)
 
 ---
