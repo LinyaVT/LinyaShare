@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { getFileByShareId } from "@/lib/upload"
-import { resolveTheme } from "@/lib/theme"
+import { loadOgAccents, renderOgPng, ogOverlayRect } from "@/lib/og"
 
 export async function GET(
   request: NextRequest,
@@ -18,21 +17,8 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Theme-Akzentfarben laden (OG-Bilder folgen dem Instanz-Theme)
-    let accentFrom = "#ec4899"
-    let accentTo = "#db2777"
-    const map: Record<string, string> = {}
-    try {
-      const rows = await prisma.setting.findMany()
-      rows.forEach((s) => {
-        map[s.key] = s.value
-      })
-      const theme = resolveTheme(map)
-      accentFrom = theme.accentMode === "single" ? theme.accentColor : theme.accentFrom
-      accentTo = theme.accentMode === "single" ? theme.accentColor : theme.accentTo
-    } catch {}
-
-    const siteName = map.siteName?.trim() || "LinyaShare"
+    // Theme-Akzentfarben laden (bereits 30% abgedunkelt → bessere Lesbarkeit)
+    const { accentFrom, accentTo, siteName } = await loadOgAccents()
 
     const fileName = file.originalName || file.name
     const fileType = file.type || ""
@@ -67,14 +53,13 @@ export async function GET(
 
     // SVG → PNG rasterisieren: Discord, Facebook & Co. rendern kein SVG
     // in Embeds, sondern nur jpg/png/gif/webp.
-    const sharp = (await import("sharp")).default
-    const pngBuffer = await sharp(Buffer.from(svg), { density: 144 }).png().toBuffer()
+    const pngBuffer = await renderOgPng(svg)
 
     return new NextResponse(pngBuffer, {
       status: 200,
       headers: {
         "Content-Type": "image/png",
-        "Content-Length": pngBuffer.length.toString(),
+        "Content-Length": pngBuffer.byteLength.toString(),
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     })
@@ -98,6 +83,7 @@ function generateLockedSvg(width: number, height: number, fileName: string, uplo
   </defs>
   
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
+  ${ogOverlayRect(width, height)}
   
   <!-- Schloss Icon -->
   <g transform="translate(${width/2}, ${height/2 - 50})" filter="url(#shadow)">
@@ -146,6 +132,7 @@ function generateImageSvg(width: number, height: number, fileName: string, uploa
   </defs>
   
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
+  ${ogOverlayRect(width, height)}
   
   <!-- Bild Icon -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
@@ -191,6 +178,7 @@ function generateVideoSvg(width: number, height: number, fileName: string, uploa
   </defs>
   
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
+  ${ogOverlayRect(width, height)}
   
   <!-- Video Icon -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
@@ -234,6 +222,7 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
   </defs>
   
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
+  ${ogOverlayRect(width, height)}
   
   <!-- Audio Icon mit Wellenform -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
@@ -297,6 +286,7 @@ function generateFileSvg(width: number, height: number, fileName: string, fileTy
   </defs>
   
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
+  ${ogOverlayRect(width, height)}
   
   <!-- Datei Icon -->
   <g transform="translate(${width/2}, ${height/2 - 60})">

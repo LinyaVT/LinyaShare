@@ -30,10 +30,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const shareUrl = `${baseUrl}/a/${shareId}`;
 
     // Cover = erstes Bild-Medium für die OG-Vorschau
+    // Falls kein Cover existiert → eigenes Album-OG-Bild (statt der Datei-Route,
+    // die bei Alben 404 liefert)
     const coverItem = album.items.find((i) => i.file.embedUrl && !i.file.password) || null;
     const ogImageUrl = coverItem
       ? `${baseUrl}/api/files/embed/${coverItem.file.shareId}/${encodeURIComponent(coverItem.file.originalName)}`
-      : `${baseUrl}/api/og/${shareId}.png`;
+      : `${baseUrl}/api/og/album/${shareId}.png`;
 
     return {
       title,

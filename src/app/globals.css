@@ -79,6 +79,14 @@
   --color-white: 15 23 42;
 }
 
+/* Ausnahme: Eigener Bild-Hintergrund (backgroundType "image") soll auch im
+   Light-Mode sichtbar sein. Die hellere Light-Grundfarbe (`--background-color`)
+   würde sonst den darunterliegenden Bild-Layer (body::before) abdecken →
+   hier auf transparent stellen. Höhere Spezifität schlägt die Light-Defaults. */
+:root[data-theme="light"][data-bg-type="image"] {
+  --background-color: transparent !important;
+}
+
 /* Ausnahme 1: Buttons auf Farbverlauf behalten weiße Schrift */
 [data-theme="light"] .btn-primary {
   color: #ffffff;
@@ -123,6 +131,25 @@
        Kante/Streifen in der Viewport-Mitte erzeugen. */
     background-size: cover;
     font-family: var(--font-body, 'Inter', sans-serif);
+  }
+
+  /* Hintergrundbild-Layer für den Typ "image" (Dim + Blur).
+     Body selbst bleibt transparent; das Bild liegt hier auf einem eigenen
+     Layer unterhalb des Inhalts, damit `filter: blur()` nur das Bild trifft.
+     `inset` wird um die Blur-Distanz erweitert, damit keine durchsichtigen
+     Blur-Ränder am Viewport sichtbar werden. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: calc(-2 * var(--background-blur, 0px));
+    z-index: -2;
+    pointer-events: none;
+    background-color: var(--background-color-layer, transparent);
+    background-image: var(--background-image-layer, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(var(--background-blur, 0px));
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {

@@ -12,6 +12,8 @@ const resolvePath = (envPath: string | undefined, fallback: string) => {
 
 export const UPLOAD_DIR = resolvePath(process.env.UPLOAD_DIR, 'data/uploads');
 export const IMPORT_DIR = resolvePath(process.env.IMPORT_DIR, 'data/import');
+export const GLOBAL_UPLOAD_DIR = resolvePath(process.env.GLOBAL_UPLOAD_DIR, 'data/uploads/global');
+export const BACKGROUND_DIR = path.join(GLOBAL_UPLOAD_DIR, 'background');
 
 export const CHUNK_SIZE = 512 * 1024; // 512KB – stays below nginx default (1m) so no proxy config is needed
 export const DEFAULT_STORAGE_LIMIT = 524288000; // 500MB in bytes

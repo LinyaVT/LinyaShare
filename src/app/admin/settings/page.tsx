@@ -357,6 +357,10 @@ export default function AdminSettingsPage() {
   const [appearance, setAppearance] = useState<ThemeConfig>({ ...DEFAULT_THEME })
   const [savingAppearance, setSavingAppearance] = useState(false)
   const [showResetAppearanceConfirm, setShowResetAppearanceConfirm] = useState(false)
+  const [bgExists, setBgExists] = useState(false)
+  const [bgUploading, setBgUploading] = useState(false)
+  const [bgDeleting, setBgDeleting] = useState(false)
+  const [bgCacheBust, setBgCacheBust] = useState(Date.now())
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
@@ -440,6 +444,66 @@ export default function AdminSettingsPage() {
       toastSuccess("Appearance reset to defaults")
     } catch {
       toastError("Failed to reset appearance")
+    }
+  }
+
+  // ── Background-Bild: Existenz prüfen, sobald der Image-Typ sichtbar ist ──
+  useEffect(() => {
+    if (appearance.backgroundType !== "image") return
+    let cancelled = false
+    fetch("/api/admin/background")
+      .then((res) => {
+        if (!cancelled) setBgExists(res.ok)
+      })
+      .catch(() => {
+        if (!cancelled) setBgExists(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [appearance.backgroundType, bgCacheBust])
+
+  async function handleBackgroundUpload(file: File) {
+    setBgUploading(true)
+    try {
+      const res = await fetch("/api/admin/background", {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toastError(data.error || "Failed to upload background image")
+        return
+      }
+      toastSuccess("Background image uploaded")
+      setBgCacheBust(Date.now())
+      setBgExists(true)
+    } catch {
+      toastError("Failed to upload background image")
+    } finally {
+      setBgUploading(false)
+    }
+  }
+
+  async function handleBackgroundRemove() {
+    setBgDeleting(true)
+    try {
+      const res = await fetch("/api/admin/background", {
+        method: "DELETE",
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toastError(data.error || "Failed to remove background image")
+        return
+      }
+      toastSuccess("Background image removed")
+      setBgCacheBust(Date.now())
+      setBgExists(false)
+    } catch {
+      toastError("Failed to remove background image")
+    } finally {
+      setBgDeleting(false)
     }
   }
 
@@ -891,6 +955,7 @@ export default function AdminSettingsPage() {
                           { value: "particles", label: "Particles" },
                           { value: "solid", label: "Solid" },
                           { value: "gradient", label: "Gradient" },
+                          { value: "image", label: "Image" },
                           { value: "none", label: "None" },
                         ]}
                         value={appearance.backgroundType}
@@ -923,6 +988,89 @@ export default function AdminSettingsPage() {
                               value={appearance.backgroundDirection}
                               onChange={(v) => updateAppearance({ backgroundDirection: v })}
                             />
+                          </div>
+                        </div>
+                      )}
+
+                      {appearance.backgroundType === "image" && (
+                        <div className="space-y-3">
+                          <div className="rounded-xl overflow-hidden border border-dark-600/20 bg-dark-900/50 min-h-[100px] flex items-center justify-center">
+                            {bgExists ? (
+                              <img
+                                src={`/api/admin/background?t=${bgCacheBust}`}
+                                alt="Background preview"
+                                className="w-full h-40 object-cover"
+                              />
+                            ) : (
+                              <p className="text-dark-500 text-sm py-8 px-4 text-center">No background image uploaded yet.</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+                            <label className="btn-secondary cursor-pointer inline-flex items-center justify-center !py-2 !px-4 text-sm flex-1 sm:flex-none">
+                              {bgUploading ? "Uploading..." : "Upload image"}
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/tiff"
+                                disabled={bgUploading}
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0]
+                                  if (f) handleBackgroundUpload(f)
+                                  e.target.value = ""
+                                }}
+                              />
+                            </label>
+                            {bgExists && (
+                              <button
+                                type="button"
+                                onClick={handleBackgroundRemove}
+                                disabled={bgDeleting}
+                                className="btn-danger inline-flex items-center justify-center !py-2 !px-4 text-sm flex-1 sm:flex-none"
+                              >
+                                {bgDeleting ? "Removing..." : "Remove"}
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-dark-500 text-xs">
+                            The image is shown as a fixed, full-screen background (also in light mode). Only image files are accepted.
+                          </p>
+                          <div>
+                            <p className="text-xs font-medium text-dark-300 mb-2">Dim</p>
+                            <div className="flex items-center gap-4">
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={5}
+                                value={appearance.backgroundImageDim}
+                                onChange={(e) => updateAppearance({ backgroundImageDim: parseInt(e.target.value) || 0 })}
+                                className="flex-1 min-w-0 accent-primary-500"
+                                aria-label="Background image dim"
+                              />
+                              <span className="text-sm text-white font-mono w-12 text-right tabular-nums">{appearance.backgroundImageDim}%</span>
+                            </div>
+                            <p className="text-dark-500 text-xs mt-1">
+                              Higher values darken the image if it is too bright.
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-dark-300 mb-2">Blur</p>
+                            <div className="flex items-center gap-4">
+                              <input
+                                type="range"
+                                min={0}
+                                max={50}
+                                step={1}
+                                value={appearance.backgroundImageBlur}
+                                onChange={(e) => updateAppearance({ backgroundImageBlur: parseInt(e.target.value) || 0 })}
+                                className="flex-1 min-w-0 accent-primary-500"
+                                aria-label="Background image blur"
+                              />
+                              <span className="text-sm text-white font-mono w-12 text-right tabular-nums">{appearance.backgroundImageBlur}px</span>
+                            </div>
+                            <p className="text-dark-500 text-xs mt-1">
+                              Softens the image background.
+                            </p>
                           </div>
                         </div>
                       )}

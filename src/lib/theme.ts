@@ -16,11 +16,13 @@ export interface ThemeConfig {
   accentFrom: string
   accentTo: string
   gradientDirection: string
-  backgroundType: "particles" | "solid" | "gradient" | "none"
+  backgroundType: "particles" | "solid" | "gradient" | "image" | "none"
   backgroundColor: string
   backgroundFrom: string
   backgroundTo: string
   backgroundDirection: string
+  backgroundImageDim: number
+  backgroundImageBlur: number
   headerSticky: boolean
   headerStyle: "blur" | "solid" | "transparent"
   fontBody: string
@@ -38,6 +40,8 @@ export const DEFAULT_THEME: ThemeConfig = {
   backgroundFrom: "#0a0a0f",
   backgroundTo: "#11111a",
   backgroundDirection: "135deg",
+  backgroundImageDim: 65,
+  backgroundImageBlur: 16,
   headerSticky: true,
   headerStyle: "blur",
   fontBody: "Inter",
@@ -49,7 +53,7 @@ export const DEFAULT_THEME: ThemeConfig = {
 // ──────────────────────────────────────────────────────────
 
 const ACCENT_MODES = new Set(["single", "gradient"])
-const BACKGROUND_TYPES = new Set(["particles", "solid", "gradient", "none"])
+const BACKGROUND_TYPES = new Set(["particles", "solid", "gradient", "image", "none"])
 const HEADER_STYLES = new Set(["blur", "solid", "transparent"])
 
 export const GRADIENT_DIRECTIONS = [
@@ -79,6 +83,13 @@ export function isGradientDirection(v: string): boolean {
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 const isHex = (v?: string): v is string => !!v && HEX_RE.test(v)
+
+function clampNumber(v: string | undefined, min: number, max: number, fallback: number): number {
+  if (v === undefined || v === null || v === "") return fallback
+  const n = parseFloat(v)
+  if (isNaN(n)) return fallback
+  return Math.min(max, Math.max(min, n))
+}
 
 // ──────────────────────────────────────────────────────────
 // FONT MAP (Google Fonts, runtime-geladen via <link>)
@@ -313,6 +324,8 @@ export function resolveTheme(settings: Record<string, string> | undefined): Them
     backgroundFrom: isHex(get("backgroundFrom", DEFAULT_THEME.backgroundFrom)) ? get("backgroundFrom", DEFAULT_THEME.backgroundFrom) : DEFAULT_THEME.backgroundFrom,
     backgroundTo: isHex(get("backgroundTo", DEFAULT_THEME.backgroundTo)) ? get("backgroundTo", DEFAULT_THEME.backgroundTo) : DEFAULT_THEME.backgroundTo,
     backgroundDirection,
+    backgroundImageDim: clampNumber(get("backgroundImageDim", "0"), 0, 100, 0),
+    backgroundImageBlur: clampNumber(get("backgroundImageBlur", "0"), 0, 50, 0),
     headerSticky: get("headerSticky", "true") !== "false",
     headerStyle,
     fontBody,
@@ -372,6 +385,19 @@ export function computeCssVars(theme: ThemeConfig): Record<string, string> {
     bgImage = buildGradient(theme.backgroundDirection === "radial" ? "radial" : "linear", theme.backgroundDirection, theme.backgroundFrom, theme.backgroundTo)
     bgAttachment = "fixed"
     bgColor = theme.backgroundFrom
+  } else if (theme.backgroundType === "image") {
+    // Das Bild wird auf einem eigenen Layer (`body::before`) gerendert, damit
+    // Dim (dunkler Overlay) und Blur (`filter`) das Bild abdunkeln/weichzeichnen,
+    // ohne den Seiteninhalt mit zu beeinflussen. `body` selbst bleibt dabei
+    // transparent, sonst würde die undurchsichtige Body-Farbe den Layer abdecken.
+    const dim = Math.min(100, Math.max(0, theme.backgroundImageDim)) / 100
+    const blur = Math.min(50, Math.max(0, theme.backgroundImageBlur))
+    const dimLayer = dim > 0 ? `linear-gradient(rgba(0,0,0,${dim.toFixed(3)}), rgba(0,0,0,${dim.toFixed(3)})), ` : ""
+    bgImage = "none"
+    bgColor = "transparent"
+    vars["--background-image-layer"] = `${dimLayer}url('/api/admin/background')`
+    vars["--background-blur"] = `${blur}px`
+    vars["--background-color-layer"] = theme.backgroundColor
   }
 
   vars["--background-image"] = bgImage
