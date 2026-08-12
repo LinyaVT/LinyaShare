@@ -371,8 +371,14 @@ export default function AdminSettingsPage() {
   async function loadSettings() {
     const res = await fetch("/api/admin/settings")
     const data = await res.json()
-    setSettings(data.settings || {})
-    setAppearance(resolveTheme(data.settings || {}))
+    const raw = data.settings || {}
+    // Alte, fälschlich als MiB gespeicherte defaultMaxSize-Werte bereinigen
+    const normalized = { ...raw }
+    if (normalized.defaultMaxSize !== undefined) {
+      normalized.defaultMaxSize = normalizeMaxSize(normalized.defaultMaxSize)
+    }
+    setSettings(normalized)
+    setAppearance(resolveTheme(normalized))
     previewReadyRef.current = true
     setLoading(false)
   }
@@ -547,9 +553,9 @@ export default function AdminSettingsPage() {
     }
   }
 
-  function handleSaveWithInput(key: string, inputId: string) {
+  function handleSaveWithInput(key: string, inputId: string, transform?: (value: string) => string) {
     const el = document.getElementById(inputId) as HTMLInputElement | HTMLTextAreaElement
-    if (el) handleSave(key, el.value)
+    if (el) handleSave(key, transform ? transform(el.value) : el.value)
   }
 
   function getSetting(key: string, fallback = "") {
@@ -566,6 +572,15 @@ export default function AdminSettingsPage() {
     const num = parseInt(mib)
     if (isNaN(num) || num < 0) return "524288000"
     return String(num * 1024 * 1024)
+  }
+
+  // Alte, fälschlich als MiB gespeicherte Werte (z.B. "500" statt Bytes),
+  // die kleiner als 1 MiB sind, → in Bytes normalisieren.
+  function normalizeMaxSize(bytes: string): string {
+    const num = parseInt(bytes)
+    if (isNaN(num) || num <= 0) return bytes
+    if (num < 1024 * 1024) return String(num * 1024 * 1024)
+    return bytes
   }
 
   const navItems = (
@@ -590,8 +605,8 @@ export default function AdminSettingsPage() {
     </nav>
   )
 
-  function InputField({ id, placeholder, type = "text", defaultValue }: {
-    id: string; placeholder?: string; type?: string; defaultValue?: string
+  function InputField({ id, placeholder, type = "text", defaultValue, transform }: {
+    id: string; placeholder?: string; type?: string; defaultValue?: string; transform?: (value: string) => string
   }) {
     return (
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -603,7 +618,7 @@ export default function AdminSettingsPage() {
           placeholder={placeholder}
         />
         <button
-          onClick={() => handleSaveWithInput(id.replace("input-", ""), id)}
+          onClick={() => handleSaveWithInput(id.replace("input-", ""), id, transform)}
           disabled={saving !== null}
           className="btn-primary w-full sm:w-auto"
         >
@@ -743,6 +758,7 @@ export default function AdminSettingsPage() {
                     id="input-defaultMaxSize"
                     placeholder="500"
                     type="number"
+                    transform={miBToBytes}
                   />
                   <p className="text-dark-500 text-xs mt-2">
                     Current: <span className="text-dark-400">{bytesToMiB(getSetting("defaultMaxSize", "524288000"))} MiB</span>
