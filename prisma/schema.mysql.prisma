@@ -1,0 +1,72 @@
+// ──────────────────────────────────────────────────────────
+// LinyaShare - MySQL / MariaDB Schema
+// Source of truth: prisma/schema.prisma (SQLite).
+// This file only differs in the datasource provider.
+// Used by deploy scripts (Pterodactyl egg) when
+// DATABASE_PROVIDER="mysql". Keep models in sync!
+// ──────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("USER")
+  maxSize   Float    @default(524288000)
+  files     File[]
+  events    StatEvent[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model File {
+  id              String   @id @default(cuid())
+  name            String
+  originalName    String
+  type            String
+  size            Float
+  password        String?
+  plainPassword   String?
+  shareId         String   @unique
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  downloads       Int      @default(0)
+  views           Int      @default(0)
+  status          String   @default("ACTIVE") // "IMPORT" | "ACTIVE"
+  embedUrl        String?
+  isMediaEmbed    Boolean  @default(false)
+  category        String?  // "video" | "audio" | "image" | "executable" | "code" | "pdf" | ...
+  isExecutable    Boolean  @default(false)
+  storageLocation String   @default("disk") // "disk" | "blob" | "s3" (Zukunft)
+  events          StatEvent[]
+  createdAt       DateTime @default(now())
+}
+
+model StatEvent {
+  id        String   @id @default(cuid())
+  type      String   @default("DOWNLOAD") // "DOWNLOAD" | "VIEW" | "UPLOAD" | "REGISTER"
+  fileId    String?
+  file      File?    @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  size      Float?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([createdAt])
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
