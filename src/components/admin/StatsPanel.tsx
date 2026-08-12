@@ -1,10 +1,11 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { Download, Eye, Upload, UserPlus, Activity, ArrowDownUp } from "lucide-react"
+import { Download, Eye, Upload, UserPlus, Activity, ArrowDownUp, Search, X } from "lucide-react"
 import { BarChart, LineChart, type ChartPoint } from "./charts"
 import { formatSize } from "@/lib/utils"
+import Pagination from "@/components/Pagination"
 
 const RANGES = [7, 30, 90] as const
 
@@ -25,6 +26,9 @@ interface StatsData {
     fileName: string | null
     userName: string | null
   }[]
+  activityTotal: number
+  activityPage: number
+  activityPerPage: number
 }
 
 function timeAgo(iso: string): string {
@@ -46,26 +50,76 @@ const ACTIVITY_ICONS: Record<string, { icon: any; label: string; color: string; 
   REGISTER: { icon: UserPlus, label: "Registered", color: "text-amber-400", bg: "bg-amber-500/10" },
 }
 
+const ACTIVITY_FILTERS = [
+  { value: "all", label: "All types" },
+  { value: "DOWNLOAD", label: "Downloads" },
+  { value: "VIEW", label: "Views" },
+  { value: "UPLOAD", label: "Uploads" },
+  { value: "REGISTER", label: "Registrations" },
+]
+
+const PAGE_SIZES = [10, 25, 50]
+
 export default function StatsPanel() {
   const [days, setDays] = useState<number>(30)
   const [data, setData] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activityLoading, setActivityLoading] = useState(false)
 
-  const load = useCallback(async (scope: number) => {
-    setLoading(true)
+  // Recent activity: search, filter & pagination
+  const [activityPage, setActivityPage] = useState(1)
+  const [activityPerPage, setActivityPerPage] = useState(10)
+  const [activityType, setActivityType] = useState("all")
+  const [activitySearch, setActivitySearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  const daysRef = useRef(days)
+  useEffect(() => { daysRef.current = days }, [days])
+
+  // Debounce the search input so we don't hit the API on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(activitySearch.trim()), 250)
+    return () => clearTimeout(t)
+  }, [activitySearch])
+
+  // Reset to the first page when the context (range, filter, search) changes
+  useEffect(() => {
+    setActivityPage(1)
+  }, [days, activityType, debouncedSearch])
+
+  const load = useCallback(async (scope: number, activity?: { page: number; perPage: number; type: string; search: string }, silent = false) => {
+    if (!silent) setLoading(true)
+    else setActivityLoading(true)
     try {
-      const res = await fetch(`/api/admin/stats?days=${scope}`)
+      const params = new URLSearchParams({ days: String(scope) })
+      if (activity) {
+        if (activity.type !== "all") params.set("activityType", activity.type)
+        if (activity.search) params.set("activitySearch", activity.search)
+        params.set("activityPage", String(activity.page))
+        params.set("activityPerPage", String(activity.perPage))
+      }
+      const res = await fetch(`/api/admin/stats?${params}`)
       const json = await res.json()
       if (res.ok) setData(json as StatsData)
     } catch {
     } finally {
       setLoading(false)
+      setActivityLoading(false)
     }
   }, [])
 
+  // Full reload when the time range changes
   useEffect(() => {
-    load(days)
-  }, [days, load])
+    load(days, { page: activityPage, perPage: activityPerPage, type: activityType, search: debouncedSearch }, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days])
+
+  // Silent reload when filter/search/page changes (charts stay visible)
+  useEffect(() => {
+    if (!data) return
+    load(daysRef.current, { page: activityPage, perPage: activityPerPage, type: activityType, search: debouncedSearch }, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activityPage, activityPerPage, activityType, debouncedSearch])
 
   const barData: ChartPoint[] = (data?.series || []).map((p) => ({
     label: p.date,
@@ -174,36 +228,103 @@ export default function StatsPanel() {
           </div>
 
           <div className="glass-card p-4 sm:p-5">
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary-400" /> Recent activity
-            </h3>
-            {data && data.activity.length === 0 ? (
-              <p className="text-dark-400 text-sm py-6 text-center">No activity in the selected period yet.</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-white mb-0 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-primary-400" /> Recent activity
+              </h3>
+              {data && data.activityTotal > 0 && (
+                <span className="text-xs text-dark-400">{data.activityTotal} events in the selected period</span>
+              )}
+            </div>
+
+            {/* Search & Filter */}
+            <div className="flex flex-col md:flex-row gap-3 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+                <input
+                  type="text"
+                  value={activitySearch}
+                  onChange={(e) => setActivitySearch(e.target.value)}
+                  placeholder="Search file or user..."
+                  className="input-field text-sm py-2 pl-10 pr-10 w-full"
+                />
+                {activitySearch && (
+                  <button
+                    onClick={() => setActivitySearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={activityType}
+                  onChange={(e) => setActivityType(e.target.value)}
+                  className="input-field text-sm py-2 w-full md:w-44"
+                >
+                  {ACTIVITY_FILTERS.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={activityPerPage}
+                  onChange={(e) => { setActivityPerPage(parseInt(e.target.value, 10)); setActivityPage(1) }}
+                  className="input-field text-sm py-2"
+                  title="Entries per page"
+                >
+                  {PAGE_SIZES.map((n) => (
+                    <option key={n} value={n}>{n} / page</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {activityLoading ? (
+              <div className="py-8 flex items-center justify-center">
+                <div className="loading-spinner"></div>
+              </div>
+            ) : data && data.activityTotal === 0 ? (
+              <p className="text-dark-400 text-sm py-6 text-center">
+                {(activityType !== "all" || activitySearch || activityPage > 1)
+                  ? "No activity matches your current filter."
+                  : "No activity in the selected period yet."}
+              </p>
             ) : (
-              <ul className="divide-y divide-dark-600/20">
-                {data?.activity.map((ev, i) => {
-                  const meta = ACTIVITY_ICONS[ev.type] || ACTIVITY_ICONS.DOWNLOAD
-                  const Icon = meta.icon
-                  return (
-                    <li key={i} className="flex items-center gap-3 py-2.5">
-                      <span className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
-                        <Icon className={`w-4 h-4 ${meta.color}`} />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white truncate">
-                          <span className={meta.color}>{meta.label}</span>{" "}
-                          <span className="font-medium">{ev.fileName || ev.userName || "—"}</span>
-                        </p>
-                        <p className="text-xs text-dark-400 truncate">
-                          {ev.userName && ev.fileName ? `by ${ev.userName}` : ""}
-                          {ev.size ? ` · ${formatSize(ev.size)}` : ""}
-                        </p>
-                      </div>
-                      <span className="text-xs text-dark-500 shrink-0">{timeAgo(ev.createdAt)}</span>
-                    </li>
-                  )
-                })}
-              </ul>
+              <>
+                <ul className="divide-y divide-dark-600/20">
+                  {data?.activity.map((ev, i) => {
+                    const meta = ACTIVITY_ICONS[ev.type] || ACTIVITY_ICONS.DOWNLOAD
+                    const Icon = meta.icon
+                    return (
+                      <li key={`${ev.createdAt}-${i}`} className="flex items-center gap-3 py-2.5">
+                        <span className={`w-9 h-9 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
+                          <Icon className={`w-4 h-4 ${meta.color}`} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white truncate">
+                            <span className={meta.color}>{meta.label}</span>{" "}
+                            <span className="font-medium">{ev.fileName || ev.userName || "—"}</span>
+                          </p>
+                          <p className="text-xs text-dark-400 truncate">
+                            {ev.userName && ev.fileName ? `by ${ev.userName}` : ""}
+                            {ev.size ? ` · ${formatSize(ev.size)}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-xs text-dark-500 shrink-0">{timeAgo(ev.createdAt)}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+
+                <Pagination
+                  currentPage={activityPage}
+                  totalPages={data ? Math.ceil(data.activityTotal / activityPerPage) : 1}
+                  onPageChange={setActivityPage}
+                  itemsPerPage={activityPerPage}
+                  totalItems={data?.activityTotal}
+                />
+              </>
             )}
           </div>
         </>

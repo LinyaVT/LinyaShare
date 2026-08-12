@@ -17,6 +17,12 @@ export async function GET(request: NextRequest) {
   const daysParam = parseInt(request.nextUrl.searchParams.get("days") || "30")
   const days = Math.min(Math.max(daysParam || 30, 1), 90)
 
+  // Recent activity: pagination, type filter & search
+  const activityPage = Math.max(parseInt(request.nextUrl.searchParams.get("activityPage") || "1") || 1, 1)
+  const activityPerPage = Math.min(Math.max(parseInt(request.nextUrl.searchParams.get("activityPerPage") || "10") || 10, 5), 100)
+  const activityType = (request.nextUrl.searchParams.get("activityType") || "all").trim().toUpperCase()
+  const activitySearch = (request.nextUrl.searchParams.get("activitySearch") || "").trim().toLowerCase()
+
   const now = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   start.setDate(start.getDate() - (days - 1))
@@ -68,13 +74,28 @@ export async function GET(request: NextRequest) {
 
   const sum = (fn: (s: typeof series[number]) => number) => series.reduce((acc, s) => acc + fn(s), 0)
 
-  const activity = events.slice(0, 15).map((ev) => ({
-    type: ev.type,
-    size: ev.size,
-    createdAt: ev.createdAt,
-    fileName: ev.file?.originalName || null,
-    userName: ev.user?.name || null,
-  }))
+  // Filter + Search auf die Activity-Events anwenden
+  let activityEvents = events
+  if (activityType !== "ALL") {
+    activityEvents = activityEvents.filter((ev) => ev.type === activityType)
+  }
+  if (activitySearch) {
+    activityEvents = activityEvents.filter((ev) =>
+      (ev.file?.originalName || "").toLowerCase().includes(activitySearch) ||
+      (ev.user?.name || "").toLowerCase().includes(activitySearch)
+    )
+  }
+
+  const activityTotal = activityEvents.length
+  const activity = activityEvents
+    .slice((activityPage - 1) * activityPerPage, activityPage * activityPerPage)
+    .map((ev) => ({
+      type: ev.type,
+      size: ev.size,
+      createdAt: ev.createdAt,
+      fileName: ev.file?.originalName || null,
+      userName: ev.user?.name || null,
+    }))
 
   return NextResponse.json({
     days,
@@ -87,5 +108,8 @@ export async function GET(request: NextRequest) {
     },
     series,
     activity,
+    activityTotal,
+    activityPage,
+    activityPerPage,
   })
 }
