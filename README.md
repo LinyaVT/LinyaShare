@@ -29,6 +29,7 @@
 | Node.js | [docs/SETUP_NODEJS.md](docs/SETUP_NODEJS.md) | Production deployment with nginx/PM2 |
 | Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Project structure and data flows |
 | Embed System | [docs/EMBED_SYSTEM.md](docs/EMBED_SYSTEM.md) | Media embeds, OG tags, streaming |
+| Statistics | [docs/STATISTICS.md](docs/STATISTICS.md) | Admin stats, charts, activity log |
 
 > [!TIP]
 > Start with the [Development Guide](docs/DEVELOPMENT.md) for local setup, or jump to [Docker](docs/SETUP_DOCKER.md) or [Node.js](docs/SETUP_NODEJS.md) for production deployment.

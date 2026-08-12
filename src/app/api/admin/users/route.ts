@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { logStatEvent } from "@/lib/stats"
 
 export async function GET() {
   const session = await auth()
@@ -102,6 +103,9 @@ export async function POST(request: NextRequest) {
         maxSize: parseInt(maxSize) || 524288000,
       },
     })
+
+    // Statistik-Event loggen (fire-and-forget)
+    logStatEvent("REGISTER", { userId: user.id })
 
     return NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email } })
   } catch (error) {

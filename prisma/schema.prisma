@@ -15,6 +15,7 @@ model User {
   role      String   @default("USER")
   maxSize   Float    @default(524288000)
   files     File[]
+  events    StatEvent[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -35,7 +36,22 @@ model File {
   status        String   @default("ACTIVE") // "IMPORT" | "ACTIVE"
   embedUrl      String?
   isMediaEmbed  Boolean  @default(false)
+  events        StatEvent[]
   createdAt     DateTime @default(now())
+}
+
+model StatEvent {
+  id        String   @id @default(cuid())
+  type      String   @default("DOWNLOAD") // "DOWNLOAD" | "VIEW" | "UPLOAD" | "REGISTER"
+  fileId    String?
+  file      File?    @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  size      Float?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([createdAt])
 }
 
 model Setting {

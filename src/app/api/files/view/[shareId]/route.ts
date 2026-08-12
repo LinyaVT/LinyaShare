@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
+import { logStatEvent } from "@/lib/stats"
 
 // Path-Sanitizing für shareId
 function isValidShareId(shareId: string): boolean {
@@ -27,6 +28,9 @@ export async function POST(
 
     // View zählt nur bei ACTIVE/claimed files
     if (file.status !== 'IMPORT') {
+      // Statistik-Event loggen (fire-and-forget)
+      logStatEvent("VIEW", { fileId: file.id, userId: file.userId || undefined, size: file.size })
+
       const { prisma } = await import("@/lib/prisma")
       const updated = await prisma.file.update({
         where: { id: file.id },

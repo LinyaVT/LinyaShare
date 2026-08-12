@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { logStatEvent } from "@/lib/stats"
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,6 +55,9 @@ export async function POST(request: NextRequest) {
         role: "USER",
       },
     })
+
+    // Statistik-Event loggen (fire-and-forget)
+    logStatEvent("REGISTER", { userId: user.id })
 
     return NextResponse.json({
       success: true,

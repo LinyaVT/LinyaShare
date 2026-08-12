@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import bcrypt from "bcryptjs"
 import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
 import { nodeStreamToWeb } from "@/lib/node-stream"
+import { logStatEvent } from "@/lib/stats"
 import path from "path"
 import fs from "fs"
 
@@ -64,6 +65,11 @@ export async function GET(
 
     const stat = fs.statSync(filePath)
     const fileSize = stat.size
+
+    // Statistik-Event loggen (fire-and-forget, nur bei Download)
+    if (isDownload && file.status !== 'IMPORT') {
+      logStatEvent("DOWNLOAD", { fileId: file.id, userId: file.userId || undefined, size: fileSize })
+    }
 
     // Korrekten Dateinamen für Content-Disposition kodieren
     const encodedFilename = encodeURIComponent(file.originalName || file.name);

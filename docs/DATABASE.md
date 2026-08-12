@@ -29,6 +29,7 @@
    - [User](#user)
    - [File](#file)
    - [Setting](#setting)
+   - [StatEvent](#statevent)
 4. [Status Workflow](#status-workflow)
 5. [Database File Locations](#database-file-locations)
 6. [Migrations](#migrations)
@@ -79,6 +80,7 @@ erDiagram
         String shareId UK "UUID"
         String userId FK "nullable"
         Int downloads "counter"
+        Int views "counter"
         String status "IMPORT | ACTIVE"
         String embedUrl "nullable"
         Boolean isMediaEmbed "default: false"
@@ -91,7 +93,18 @@ erDiagram
         String value "string value"
     }
 
+    StatEvent {
+        String id PK "cuid()"
+        String type "DOWNLOAD | VIEW | UPLOAD | REGISTER"
+        String fileId FK "nullable"
+        String userId FK "nullable"
+        Float size "nullable, bytes"
+        DateTime createdAt
+    }
+
     User ||--o{ File : "has"
+    User ||--o{ StatEvent : "logged"
+    File ||--o{ StatEvent : "logged"
 ```
 
 ---
@@ -152,6 +165,7 @@ The `File` model represents an uploaded or imported file.
 | `shareId` | `String @unique` | UUID for share URLs (`/s/{shareId}`) |
 | `userId` | `String?` | Owner's user ID (null = unclaimed) |
 | `downloads` | `Int` | Download counter |
+| `views` | `Int` | View counter (counted per `/s/` page view) |
 | `status` | `String` | `"IMPORT"` or `"ACTIVE"` |
 | `embedUrl` | `String?` | URL for media embed |
 | `isMediaEmbed` | `Boolean` | Whether file has embeddable media |
@@ -188,6 +202,39 @@ The `Setting` model is a key-value store for global configuration.
 
 > [!NOTE]
 > Settings are managed through the admin panel at `/admin/settings`. They can also be manipulated directly via Prisma Studio.
+
+---
+
+### StatEvent
+
+The `StatEvent` model is a timestamped activity log that powers the admin statistics dashboard.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `cuid()` | Auto-generated unique identifier |
+| `type` | `String` | Event type: `DOWNLOAD`, `VIEW`, `UPLOAD` or `REGISTER` |
+| `fileId` | `String?` | Related file (null for registrations), `onDelete: SetNull` |
+| `userId` | `String?` | Related user (null for admin imports), `onDelete: SetNull` |
+| `size` | `Float?` | File size in bytes (used for bandwidth stats) |
+| `createdAt` | `DateTime` | Event timestamp |
+
+#### Event Types
+
+| Type | Trigger | Size logged |
+|------|---------|-------------|
+| `DOWNLOAD` | File downloaded via `/api/files/download` or `/api/files/stream?download=1` | Yes (file size) |
+| `VIEW` | Share page `/s/{shareId}` viewed (password-protected files only after unlock) | Yes (file size) |
+| `UPLOAD` | User upload or admin import finalized | Yes (file size) |
+| `REGISTER` | Self-registration, admin-created user, or first Setup admin | No |
+
+> [!NOTE]
+> Events are written **fire-and-forget** — logging failures are silently ignored so they never block the upload/download hot path. The aggregate `downloads` / `views` counters remain independent and keep working even if the log is unavailable.
+
+> [!IMPORTANT]
+> The event log starts collecting **after** deployment. Historical aggregated counters cannot be reconstructed — "last 30 days" figures therefore start at 0.
+
+> [!TIP]
+> For SQLite, the stat events are queried per period and bucketed in memory. This is fine for self-hosted scale; for very high traffic consider periodic cleanup of old `StatEvent` rows.
 
 ---
 
@@ -265,7 +312,7 @@ Opens a web-based GUI at `http://localhost:5555` for:
 
 | Action | Description |
 |--------|-------------|
-| Browse tables | View all records in User, File, Setting |
+| Browse tables | View all records in User, File, Setting, StatEvent |
 | Edit records | Modify data directly |
 | Create test data | Add users or files for testing |
 | Debug issues | Inspect relationships and values |
@@ -281,6 +328,8 @@ sqlite3 prisma/linyashare.db
 SELECT * FROM User;        # View all users
 SELECT * FROM File;        # View all files
 SELECT * FROM Setting;     # View all settings
+SELECT * FROM StatEvent;   # View all stat events
+SELECT type, COUNT(*) FROM StatEvent GROUP BY type;  # Event totals per type
 ```
 
 ### Backup

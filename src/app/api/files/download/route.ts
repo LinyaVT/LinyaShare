@@ -3,6 +3,7 @@ import { getFileByShareId } from "@/lib/upload"
 import bcrypt from "bcryptjs"
 import { UPLOAD_DIR, IMPORT_DIR } from "@/lib/constants"
 import { nodeStreamToWeb } from "@/lib/node-stream"
+import { logStatEvent } from "@/lib/stats"
 import path from "path"
 import fs from "fs"
 
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
         data: { downloads: { increment: 1 } },
       })
     }
+
+    // Statistik-Event loggen (fire-and-forget)
+    logStatEvent("DOWNLOAD", { fileId: file.id, userId: file.userId || undefined, size: stat.size })
 
     // Korrekten Dateinamen für Content-Disposition kodieren
     const encodedFilename = encodeURIComponent(file.originalName);

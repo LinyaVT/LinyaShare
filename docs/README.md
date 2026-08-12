@@ -5,7 +5,7 @@
 > Central index for all project documentation. Use this page to navigate between guides.
 
 ![Docs](https://img.shields.io/badge/docs-complete-22c55e?style=for-the-badge)
-![Pages](https://img.shields.io/badge/pages-10-ec4899?style=for-the-badge)
+![Pages](https://img.shields.io/badge/pages-11-ec4899?style=for-the-badge)
 
 </div>
 
@@ -25,6 +25,7 @@ graph TD
     WIKI --> NODE[SETUP_NODEJS.md<br/>Node.js Guide]
     WIKI --> ARCH[ARCHITECTURE.md<br/>Architecture]
     WIKI --> EMBED[EMBED_SYSTEM.md<br/>Embed System]
+    WIKI --> STAT[STATISTICS.md<br/>Statistics System]
 
     style MAIN fill:#1e1e2e,stroke:#ec4899,color:#fff
     style WIKI fill:#1e1e2e,stroke:#22c55e,color:#fff
@@ -45,7 +46,8 @@ graph TD
 | 7 | [SETUP_NODEJS.md](SETUP_NODEJS.md) | Complete | Node.js production guide |
 | 8 | [ARCHITECTURE.md](ARCHITECTURE.md) | Complete | Project architecture overview |
 | 9 | [EMBED_SYSTEM.md](EMBED_SYSTEM.md) | Complete | Media embed system docs |
-| 10 | [README.md](../README.md) | Complete | Main project README |
+| 10 | [STATISTICS.md](STATISTICS.md) | Complete | Admin statistics, charts & activity log |
+| 11 | [README.md](../README.md) | Complete | Main project README |
 
 ---
 

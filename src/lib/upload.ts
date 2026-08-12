@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateEmbedUrl, isSupportedMediaType } from './embed-generator';
+import { logStatEvent } from './stats';
 
 // Extended File types for embed fields
 type FileWithEmbed = {
@@ -123,7 +124,7 @@ export async function finalizeUserUpload(
   const isMedia = isSupportedMediaType(mimeType, originalName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
-  return await prisma.file.create({
+  const record = await prisma.file.create({
     data: {
       name: finalName,
       originalName, // originalName stays UNCHANGED (spaces, umlauts, etc.)
@@ -138,6 +139,11 @@ export async function finalizeUserUpload(
       isMediaEmbed: isMedia,
     },
   });
+
+  // Statistik-Event loggen (fire-and-forget)
+  logStatEvent("UPLOAD", { fileId: record.id, userId, size: record.size });
+
+  return record;
 }
 
 // ──────────────────────────────────────────────────────────
@@ -167,7 +173,7 @@ export async function finalizeImportUpload(
   const isMedia = isSupportedMediaType(mimeType, originalName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
-  return await prisma.file.create({
+  const record = await prisma.file.create({
     data: {
       name: finalName,
       originalName,
@@ -180,6 +186,11 @@ export async function finalizeImportUpload(
       isMediaEmbed: isMedia,
     },
   });
+
+  // Statistik-Event loggen (fire-and-forget)
+  logStatEvent("UPLOAD", { fileId: record.id, userId: userId || undefined, size: record.size });
+
+  return record;
 }
 
 // ──────────────────────────────────────────────────────────

@@ -94,7 +94,8 @@ LinyaShare/
 │   ├── SETUP_PTERODACTYL.md   # Pterodactyl/FeatherPanel guide
 │   ├── SETUP_NODEJS.md        # Node.js production guide
 │   ├── ARCHITECTURE.md        # This file
-│   └── EMBED_SYSTEM.md        # Media embed system documentation
+│   ├── EMBED_SYSTEM.md        # Media embed system documentation
+│   └── STATISTICS.md          # Admin statistics & activity log
 │
 ├── data/
 │   ├── uploads/               # User-uploaded files

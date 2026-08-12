@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { logStatEvent } from "@/lib/stats"
 
 export async function GET() {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    await prisma.user.create({
+    const admin = await prisma.user.create({
       data: {
         name,
         email,
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
         maxSize: 1073741824,
       },
     })
+
+    // Statistik-Event loggen (fire-and-forget)
+    logStatEvent("REGISTER", { userId: admin.id })
 
     // Initialize settings safely
     const existingReg = await prisma.setting.findUnique({ where: { key: "allowRegistration" } })

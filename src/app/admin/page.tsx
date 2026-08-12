@@ -8,6 +8,7 @@ import { Users, FileText, HardDrive, Shield, Settings } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/Header"
 import SkeletonLoader from "@/components/SkeletonLoader"
+import StatsPanel from "@/components/admin/StatsPanel"
 import { formatSize } from "@/lib/utils"
 
 export default function AdminPage() {
@@ -71,6 +72,8 @@ export default function AdminPage() {
                 </Link>
               ))}
             </div>
+
+            <StatsPanel />
           </>
         )}
       </main>
