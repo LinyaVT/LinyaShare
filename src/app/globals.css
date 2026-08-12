@@ -118,7 +118,10 @@
     background-color: var(--background-color, #0a0a0f);
     background-image: var(--background-image, none);
     background-attachment: var(--background-attachment, scroll);
-    background-size: 100% 100%;
+    /* `cover` statt `100% 100%`: verhindert gestreckte/getilte Hintergründe,
+       die besonders bei langen Seiten (z.B. Galerie) eine sichtbare harte
+       Kante/Streifen in der Viewport-Mitte erzeugen. */
+    background-size: cover;
     font-family: var(--font-body, 'Inter', sans-serif);
   }
 

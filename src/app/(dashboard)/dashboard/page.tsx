@@ -5,63 +5,26 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  Upload, Trash2, Copy, Check, FileText, LogOut, Settings, Shield, Lock, Eye, EyeOff,
-  HardDrive, Download, Calendar, Search, Filter, X, FileVideo, FileAudio, FileImage,
-  FileArchive, File as FileIcon, ChevronDown, ChevronUp, LayoutGrid, List, Play, Share2, Music, Film, Link as LinkIcon, Image,
-  MoreVertical, Code, Binary, Box, Database, Type, FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey
+  Upload, Trash2, Copy, Check, FileText, FileArchive, LogOut, Settings, Shield, Lock, Eye, EyeOff,
+  HardDrive, Download, Calendar, Search, Filter, X, ChevronDown, ChevronUp, LayoutGrid, List, Play,
+  Share2, Music, Film, Link as LinkIcon, Image, MoreVertical, Code, Binary, Box, Database, Type,
+  FileBadge, FileSpreadsheet, Presentation, BookOpen, Captions, Palette, Table, FileKey, Images,
+  CheckSquare, Square, ListChecks, FileAudio,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import Header from "@/components/Header"
 import ConfirmDialog from "@/components/ConfirmDialog"
 import Pagination from "@/components/Pagination"
-import { formatSize, formatDate, formatSpeed, formatTime, getFileTypeCategory, isEmbeddableMedia, uuidV4 } from "@/lib/utils"
-import { DEFAULT_STORAGE_LIMIT, CHUNK_SIZE } from "@/lib/constants"
+import { formatSize, formatDate, getFileTypeCategory, isEmbeddableMedia } from "@/lib/utils"
+import { DEFAULT_STORAGE_LIMIT } from "@/lib/constants"
 import MobileFileMenu from "@/components/MobileFileMenu"
-
-// ──────────────────────────────────────────────────────────
-// FILE TYPE HELPERS
-// ──────────────────────────────────────────────────────────
-function getFileIcon(type: string, name: string) {
-  const category = getFileTypeCategory(type, name)
-  switch (category) {
-    case "video":
-      return <FileVideo className="w-4 h-4 text-primary-400 shrink-0" />
-    case "audio":
-      return <FileAudio className="w-4 h-4 text-primary-400 shrink-0" />
-    case "image":
-      return <FileImage className="w-4 h-4 text-primary-400 shrink-0" />
-    case "archive":
-      return <FileArchive className="w-4 h-4 text-primary-400 shrink-0" />
-    case "code":
-      return <Code className="w-4 h-4 text-primary-400 shrink-0" />
-    case "executable":
-      return <Binary className="w-4 h-4 text-primary-400 shrink-0" />
-    case "model":
-      return <Box className="w-4 h-4 text-primary-400 shrink-0" />
-    case "data":
-      return <Database className="w-4 h-4 text-primary-400 shrink-0" />
-    case "database":
-      return <Table className="w-4 h-4 text-primary-400 shrink-0" />
-    case "font":
-      return <Type className="w-4 h-4 text-primary-400 shrink-0" />
-    case "pdf":
-      return <FileBadge className="w-4 h-4 text-primary-400 shrink-0" />
-    case "spreadsheet":
-      return <FileSpreadsheet className="w-4 h-4 text-primary-400 shrink-0" />
-    case "presentation":
-      return <Presentation className="w-4 h-4 text-primary-400 shrink-0" />
-    case "ebook":
-      return <BookOpen className="w-4 h-4 text-primary-400 shrink-0" />
-    case "subtitle":
-      return <Captions className="w-4 h-4 text-primary-400 shrink-0" />
-    case "design":
-      return <Palette className="w-4 h-4 text-primary-400 shrink-0" />
-    case "key":
-      return <FileKey className="w-4 h-4 text-primary-400 shrink-0" />
-    default:
-      return <FileIcon className="w-4 h-4 text-primary-400 shrink-0" />
-  }
-}
+import { FileTypeIcon } from "@/components/FileTypeIcon"
+import UploadModal from "@/components/UploadModal"
+import UploadSuccessPopup from "@/components/UploadSuccessPopup"
+import type { UploadedFileResult } from "@/components/UploadModal"
+import AlbumModal from "@/components/AlbumModal"
+import type { AlbumData } from "@/components/AlbumModal"
+import AlbumsSection from "@/components/AlbumsSection"
 
 // ──────────────────────────────────────────────────────────
 // FILE TYPE FILTER OPTIONS
@@ -108,7 +71,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Captions,
   Palette,
   FileKey,
-  FileIcon
+  FileIcon: FileText,
 }
 
 // ──────────────────────────────────────────────────────────
@@ -139,40 +102,6 @@ function SkeletonLoader({ count = 3 }: { count?: number }) {
           </div>
         </motion.div>
       ))}
-    </div>
-  )
-}
-
-// ──────────────────────────────────────────────────────────
-// UPLOAD PROGRESS COMPONENT
-// ──────────────────────────────────────────────────────────
-function UploadProgressBar({
-  percent,
-  uploadedBytes,
-  totalBytes,
-  speed,
-  eta,
-}: {
-  percent: number
-  uploadedBytes: number
-  totalBytes: number
-  speed: number
-  eta: number
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="w-full bg-dark-700 rounded-full h-3 overflow-hidden">
-        <motion.div
-          animate={{ width: `${Math.min(percent, 100)}%` }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.3)]"
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-dark-400">
-        <span className="text-white/80 font-medium">{formatSize(uploadedBytes)} / {formatSize(totalBytes)} ({percent}%)</span>
-        <span className="text-primary-400 font-medium">{formatSpeed(speed)}</span>
-        <span className="text-dark-300">ETA: {formatTime(eta)}</span>
-      </div>
     </div>
   )
 }
@@ -253,13 +182,19 @@ export default function DashboardPage() {
   const router = useRouter()
   const [files, setFiles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState("")
-  const [showUpload, setShowUpload] = useState(false)
-  const [password, setPassword] = useState("")
+  const [albums, setAlbums] = useState<AlbumData[]>([])
+  const [albumsLoading, setAlbumsLoading] = useState(true)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [successFiles, setSuccessFiles] = useState<UploadedFileResult[] | null>(null)
+  const [albumModal, setAlbumModal] = useState<{
+    open: boolean
+    mode: "create" | "edit"
+    preselectedFileIds: string[]
+    album: AlbumData | null
+  }>({ open: false, mode: "create", preselectedFileIds: [], album: null })
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [storageUsed, setStorageUsed] = useState(0)
-  const [storageMax, setStorageMax] = useState(524288000)
+  const [storageMax, setStorageMax] = useState(DEFAULT_STORAGE_LIMIT)
   const [editingPasswordId, setEditingPasswordId] = useState<string | null>(null)
   const [editingPassword, setEditingPassword] = useState("")
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
@@ -269,6 +204,8 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
   const [expandedFile, setExpandedFile] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
   const itemsPerPage = 10
 
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -285,18 +222,6 @@ export default function DashboardPage() {
     variant: "danger"
   })
 
-  // Upload Metrics
-  const [uploadPercent, setUploadPercent] = useState(0)
-  const [uploadedBytes, setUploadedBytes] = useState(0)
-  const [uploadTotalBytes, setUploadTotalBytes] = useState(0)
-  const [uploadSpeed, setUploadSpeed] = useState(0)
-  const [estimatedTime, setEstimatedTime] = useState(0)
-  const uploadedBytesRef = useRef(0)
-  const totalBytesRef = useRef(0)
-  const speedSamplesRef = useRef<{ time: number; bytes: number }[]>([])
-  const uploadStartRef = useRef(0)
-  const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
   const loadFiles = useCallback(async () => {
     try {
       const res = await fetch("/api/files")
@@ -308,141 +233,37 @@ export default function DashboardPage() {
     }
   }, [])
 
+  const loadAlbums = useCallback(async () => {
+    setAlbumsLoading(true)
+    try {
+      const res = await fetch("/api/albums")
+      const data = await res.json()
+      setAlbums(data.albums || [])
+    } catch {} finally {
+      setAlbumsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
     else if (status === "authenticated") {
       loadFiles()
+      loadAlbums()
       fetch("/api/user/settings").then((r) => r.json()).then((d) => d.maxSize && setStorageMax(d.maxSize)).catch(() => {})
     }
-  }, [status, router, loadFiles])
+  }, [status, router, loadFiles, loadAlbums])
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, filterType, fileTypeFilter])
 
-  // ── Speed & ETA Calculation (windowed, wall-clock based) ──
-  const stopUploadTicker = useCallback(() => {
-    if (tickerRef.current) {
-      clearInterval(tickerRef.current)
-      tickerRef.current = null
-    }
-  }, [])
-
-  useEffect(() => stopUploadTicker, [stopUploadTicker])
-
-  function startUploadTicker(totalBytes: number) {
-    stopUploadTicker()
-    totalBytesRef.current = totalBytes
-    uploadedBytesRef.current = 0
-    speedSamplesRef.current = [{ time: Date.now(), bytes: 0 }]
-    uploadStartRef.current = Date.now()
-
-    setUploadTotalBytes(totalBytes)
-    setUploadedBytes(0)
-    setUploadSpeed(0)
-    setEstimatedTime(0)
-    setUploadPercent(0)
-
-    tickerRef.current = setInterval(() => {
-      const now = Date.now()
-      const bytesNow = uploadedBytesRef.current
-      const total = totalBytesRef.current
-      const percent = total > 0 ? Math.round((bytesNow / total) * 100) : 0
-
-      // Nur Samples der letzten 5 Sekunden behalten (wandert mit der Zeit,
-      // dadurch fällt der Speed während Stillstand auch real ab)
-      const cutoff = now - 5000
-      while (speedSamplesRef.current.length > 1 && speedSamplesRef.current[0].time < cutoff) {
-        speedSamplesRef.current.shift()
-      }
-      const first = speedSamplesRef.current[0]
-      const windowSecs = (now - first.time) / 1000
-      const windowSpeed = windowSecs > 0 ? (bytesNow - first.bytes) / windowSecs : 0
-
-      // Fallback: Durchschnitts-Speed seit Upload-Start.
-      // Verhindert, dass die ETA bei einem einzelnen langsam übertragenen Chunk
-      // auf "—" springt, und bleibt damit immer eine sinnvolle Schätzung.
-      const elapsed = (now - uploadStartRef.current) / 1000
-      const avgSpeed = elapsed > 0 ? bytesNow / elapsed : 0
-
-      const speed = windowSpeed > 0 ? windowSpeed : avgSpeed
-
-      const remaining = total - bytesNow
-      const eta = speed > 0 && remaining > 0 ? remaining / speed : 0
-
-      setUploadedBytes(bytesNow)
-      setUploadPercent(percent)
-      setUploadSpeed(speed)
-      setEstimatedTime(eta)
-
-      if (total > 0 && bytesNow >= total) {
-        stopUploadTicker()
-      }
-    }, 200)
-  }
-
-  // ── Upload Handler ──
-  async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fileInput = form.querySelector<HTMLInputElement>('input[type="file"]');
-    if (!fileInput?.files?.length) return;
-
-    const file = fileInput.files[0];
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const uploadId = uuidV4();
-
-    setUploading(true);
-    setUploadProgress("");
-    startUploadTicker(file.size);
-
-    try {
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-        const isFinal = i === totalChunks - 1;
-
-        const headers: Record<string, string> = {
-          "x-upload-id": uploadId,
-          "x-chunk-index": i.toString(),
-          "x-is-final": isFinal ? "true" : "false",
-          "x-filename": file.name,
-          "x-mime-type": file.type,
-        };
-
-        if (password) {
-          headers["x-password"] = password;
-        }
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          headers,
-          body: chunk,
-        });
-
-        if (!res.ok) {
-          const errData = await res.json()
-          throw new Error(errData.error || `Chunk ${i} failed with status ${res.status}`)
-        }
-
-        uploadedBytesRef.current = end;
-        speedSamplesRef.current.push({ time: Date.now(), bytes: end });
-      }
-
-      setUploadProgress("Upload successful!");
-      setShowUpload(false);
-      setPassword("");
-      fileInput.value = "";
-      loadFiles();
-    } catch (err: any) {
-      setUploadProgress("Upload failed: " + err.message);
-    } finally {
-      stopUploadTicker();
-      setUploading(false);
-    }
-  }
+  // Exit selection mode when file list changes drastically
+  useEffect(() => {
+    if (!selectionMode) return
+    const currentIds = new Set(files.map((f: any) => f.id))
+    setSelectedFileIds((prev) => prev.filter((id) => currentIds.has(id)))
+  }, [files, selectionMode])
 
   async function handleUpdatePassword(fileId: string) {
     if (!editingPassword.trim()) return
@@ -480,12 +301,26 @@ export default function DashboardPage() {
       message: "Are you sure you want to delete this file permanently? This action cannot be undone.",
       variant: "danger",
       onConfirm: async () => {
-        await fetch("/api/files", { 
-          method: "DELETE", 
-          headers: { "Content-Type": "application/json" }, 
-          body: JSON.stringify({ fileId }) 
+        await fetch("/api/files", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId })
         })
         loadFiles()
+        loadAlbums()
+      }
+    })
+  }
+
+  async function handleDeleteAlbum(album: AlbumData) {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete album?",
+      message: `Are you sure you want to delete "${album.name}"? The shared gallery link will stop working. Your files are not deleted.`,
+      variant: "danger",
+      onConfirm: async () => {
+        await fetch(`/api/albums/${album.shareId}`, { method: "DELETE" })
+        loadAlbums()
       }
     })
   }
@@ -494,6 +329,27 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(text)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  function directDownloadUrl(file: any) {
+    return `${window.location.origin}/api/files/stream/${file.shareId}?download=1`
+  }
+
+  function openCreateAlbum(fileIds: string[]) {
+    setAlbumModal({ open: true, mode: "create", preselectedFileIds: fileIds, album: null })
+  }
+
+  function handleAlbumSaved() {
+    loadAlbums()
+    loadFiles()
+    setAlbumModal((prev) => ({ ...prev, open: false, preselectedFileIds: [] }))
+    setSuccessFiles(null)
+    setSelectionMode(false)
+    setSelectedFileIds([])
+  }
+
+  function toggleSelectFile(id: string) {
+    setSelectedFileIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   if (status === "loading") return (
@@ -525,6 +381,19 @@ export default function DashboardPage() {
     if (filterType === "date") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     return 0
   })
+
+  // Selection across the whole (filtered) list
+  const allFilteredShown = selectionMode && filteredFiles.length > 0
+  const allSelected = allFilteredShown && filteredFiles.every((f: any) => selectedFileIds.includes(f.id))
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedFileIds((prev) => prev.filter((id) => !filteredFiles.some((f: any) => f.id === id)))
+    } else {
+      const ids = filteredFiles.map((f: any) => f.id)
+      setSelectedFileIds((prev) => [...new Set([...prev, ...ids])])
+    }
+  }
 
   // Pagination
   const totalPages = Math.ceil(filteredFiles.length / itemsPerPage)
@@ -576,97 +445,113 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Upload Section */}
+        {/* Upload Button */}
         <div className="mb-8">
-          <button onClick={() => setShowUpload(!showUpload)} className="btn-primary flex items-center gap-2">
-            <Upload className="w-5 h-5" /> {showUpload ? "Close" : "Upload file"}
+          <button onClick={() => setUploadModalOpen(true)} className="btn-primary flex items-center gap-2">
+            <Upload className="w-5 h-5" /> Upload files
           </button>
+          <p className="text-xs text-dark-500 mt-2">Upload multiple files at once — share them individually or combine them into an album.</p>
+        </div>
 
+        {/* Albums */}
+        <AlbumsSection
+          albums={albums}
+          loading={albumsLoading}
+          onEdit={(album) => setAlbumModal({ open: true, mode: "edit", preselectedFileIds: [], album })}
+          onDelete={handleDeleteAlbum}
+          onCreateClick={() => { setSelectionMode(true); setUploadModalOpen(false) }}
+        />
+
+        {/* Search, Filter & View Toggle */}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Title Row */}
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="section-title flex items-center gap-2 mb-0">
+              <FileText className="w-6 h-6 text-primary-400" /> My files
+            </h2>
+            <div className="flex items-center gap-2">
+              {/* Select mode toggle */}
+              <button
+                onClick={() => {
+                  setSelectionMode(!selectionMode)
+                  setSelectedFileIds([])
+                }}
+                className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
+                  selectionMode
+                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)] border border-primary-500/30"
+                    : "bg-dark-800/60 border border-dark-600/30 text-dark-400 hover:text-white hover:bg-dark-700/50"
+                }`}
+                title={selectionMode ? "Exit selection mode" : "Select files to create an album"}
+              >
+                {selectionMode ? <ListChecks className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
+                <span className="hidden md:inline text-xs font-medium">{selectionMode ? "Done" : "Select"}</span>
+              </button>
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-dark-800/60 border border-dark-600/30 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === "list"
+                      ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
+                      : "text-dark-400 hover:text-white hover:bg-dark-700/50"
+                  }`}
+                  title="List view"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === "grid"
+                      ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
+                      : "text-dark-400 hover:text-white hover:bg-dark-700/50"
+                  }`}
+                  title="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Selection toolbar */}
           <AnimatePresence>
-            {showUpload && (
+            {selectionMode && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <form onSubmit={handleUpload} className="glass-card p-6 mt-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-dark-300 mb-2">Select file</label>
-                    <input
-                      type="file"
-                      className="input-field file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-500/10 file:text-primary-400 hover:file:bg-primary-500/20"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-dark-300 mb-2">Password protection (optional)</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Set a password for download"
-                      className="input-field"
-                    />
-                  </div>
-
-                  {uploading && (
-                    <UploadProgressBar
-                      percent={uploadPercent}
-                      uploadedBytes={uploadedBytes}
-                      totalBytes={uploadTotalBytes}
-                      speed={uploadSpeed}
-                      eta={estimatedTime}
-                    />
-                  )}
-
-                  {uploadProgress && !uploading && (
-                    <p className={`text-sm ${uploadProgress.includes("failed") ? "text-red-400" : "text-green-400"}`}>
-                      {uploadProgress}
-                    </p>
-                  )}
-                  <button type="submit" disabled={uploading} className="btn-primary flex items-center gap-2">
-                    <Upload className="w-5 h-5" /> {uploading ? "Uploading..." : "Upload"}
+                <div className="flex flex-wrap items-center gap-3 glass-card p-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 text-sm text-dark-300 hover:text-white transition-colors"
+                  >
+                    {allSelected ? <Square className="w-4 h-4" /> : <CheckSquare className="w-4 h-4" />}
+                    {allSelected ? "Deselect all" : "Select all"}
                   </button>
-                </form>
+                  <span className="text-sm text-dark-400">
+                    {selectedFileIds.length} selected
+                  </span>
+                  <div className="flex-1" />
+                  <button
+                    onClick={() => openCreateAlbum(selectedFileIds)}
+                    disabled={selectedFileIds.length === 0}
+                    className="btn-primary text-sm flex items-center gap-2"
+                  >
+                    <Images className="w-4 h-4" /> Share as album
+                  </button>
+                  <button
+                    onClick={() => { setSelectionMode(false); setSelectedFileIds([]) }}
+                    className="btn-secondary text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        {/* Search, Filter & View Toggle */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Title Row */}
-          <div className="flex items-center justify-between">
-            <h2 className="section-title flex items-center gap-2 mb-0">
-              <FileText className="w-6 h-6 text-primary-400" /> My files
-            </h2>
-            {/* View Toggle */}
-            <div className="flex items-center gap-1 bg-dark-800/60 border border-dark-600/30 rounded-xl p-1">
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "list"
-                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
-                    : "text-dark-400 hover:text-white hover:bg-dark-700/50"
-                }`}
-                title="List view"
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "grid"
-                    ? "bg-primary-500/20 text-primary-400 shadow-[0_0_10px_rgb(var(--primary-500)/0.1)]"
-                    : "text-dark-400 hover:text-white hover:bg-dark-700/50"
-                }`}
-                title="Grid view"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
 
           {/* Search & Sort Row */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
@@ -765,12 +650,31 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="glass-card-hover p-4"
+                    onClick={() => selectionMode && toggleSelectFile(file.id)}
+                    className={`glass-card-hover p-4 transition-all ${
+                      selectionMode
+                        ? "cursor-pointer " + (selectedFileIds.includes(file.id)
+                            ? "ring-2 ring-primary-500/60 border-primary-500/40 bg-primary-500/5"
+                            : "hover:border-primary-500/30")
+                        : ""
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0">
                         <h3 className="text-white font-medium break-all flex items-center gap-2">
-{getFileIcon(file.type, file.originalName || file.name)}
+                          {selectionMode && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSelectFile(file.id) }}
+                              className={`p-1 rounded-md transition-colors ${
+                                selectedFileIds.includes(file.id)
+                                  ? "bg-primary-500/20 text-primary-400"
+                                  : "text-dark-500 hover:text-dark-300"
+                              }`}
+                            >
+                              <CheckSquare className="w-4 h-4" />
+                            </button>
+                          )}
+                          <FileTypeIcon type={file.type} name={file.originalName || file.name} />
                           {file.originalName}
                         </h3>
                         <div className="flex flex-wrap gap-3 mt-2 text-sm text-dark-400">
@@ -787,7 +691,7 @@ export default function DashboardPage() {
                             <Eye className="w-3 h-3" /> {file.views} views
                           </span>
                           {file.hasPassword ? (
-                            <span className="text-primary-400 flex items-center gap-1">
+                            <span className="text-primary-400 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setShowPasswords({ ...showPasswords, [file.id]: !showPasswords[file.id] })}
                                 className="hover:text-white transition-colors"
@@ -807,7 +711,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                         {/* Share URL - compact on mobile, full on desktop */}
-                        <div className="mt-3 flex items-center gap-2">
+                        <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex-1 min-w-0">
                             <div className="hidden sm:block">
                               <input
@@ -831,8 +735,16 @@ export default function DashboardPage() {
                           <button
                             onClick={() => copyToClipboard(file.shareUrl, file.id)}
                             className="btn-secondary text-sm py-2 px-3 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            title="Copy share link"
                           >
                             {copiedId === file.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => copyToClipboard(directDownloadUrl(file), `dl-${file.id}`)}
+                            className="btn-secondary text-sm py-2 px-3 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            title="Copy direct download link"
+                          >
+                            {copiedId === `dl-${file.id}` ? <Check className="w-4 h-4 text-green-400" /> : <LinkIcon className="w-4 h-4" />}
                           </button>
                           {/* Desktop: Extra Buttons */}
                           <div className="hidden md:flex items-center gap-2">
@@ -871,7 +783,7 @@ export default function DashboardPage() {
                         </div>
 
                         {isEmbeddableMedia(file) && file.embedUrl && (
-                          <div className="mt-3 hidden sm:flex items-center gap-2">
+                          <div className="mt-3 hidden sm:flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <LinkIcon className="w-4 h-4 text-primary-400 shrink-0" />
                             <input
                               type="text"
@@ -890,11 +802,13 @@ export default function DashboardPage() {
                         )}
 
                         {/* Expandable Preview */}
-                        <FilePreview
-                          file={file}
-                          isExpanded={expandedFile === file.id}
-                          onToggle={() => setExpandedFile(expandedFile === file.id ? null : file.id)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <FilePreview
+                            file={file}
+                            isExpanded={expandedFile === file.id}
+                            onToggle={() => setExpandedFile(expandedFile === file.id ? null : file.id)}
+                          />
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -909,15 +823,34 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="glass-card-hover p-5 flex flex-col"
+                    onClick={() => selectionMode && toggleSelectFile(file.id)}
+                    className={`glass-card-hover p-5 flex flex-col transition-all ${
+                      selectionMode
+                        ? "cursor-pointer " + (selectedFileIds.includes(file.id)
+                            ? "ring-2 ring-primary-500/60 border-primary-500/40 bg-primary-500/5"
+                            : "hover:border-primary-500/30")
+                        : ""
+                    }`}
                   >
                     {/* File Icon & Name */}
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center shrink-0">
-                        {getFileIcon(file.type, file.originalName || file.name)}
+                        <FileTypeIcon type={file.type} name={file.originalName || file.name} className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-white font-medium text-sm truncate">{file.originalName}</h3>
+                        <h3 className="text-white font-medium text-sm truncate flex items-center gap-1.5">
+                          {selectionMode && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleSelectFile(file.id) }}
+                              className={`p-0.5 rounded transition-colors shrink-0 ${
+                                selectedFileIds.includes(file.id) ? "text-primary-400" : "text-dark-500"
+                              }`}
+                            >
+                              <CheckSquare className="w-4 h-4" />
+                            </button>
+                          )}
+                          <span className="truncate">{file.originalName}</span>
+                        </h3>
                         <p className="text-dark-400 text-xs mt-0.5">{formatSize(file.size)}</p>
                       </div>
                     </div>
@@ -941,7 +874,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Share URL (compact) */}
-                    <div className="flex items-center gap-1 mb-3">
+                    <div className="flex items-center gap-1 mb-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="text"
                         value={file.shareUrl}
@@ -952,13 +885,21 @@ export default function DashboardPage() {
                       <button
                         onClick={() => copyToClipboard(file.shareUrl, file.id)}
                         className="btn-secondary text-xs py-1.5 px-2"
+                        title="Copy share link"
                       >
                         {copiedId === file.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(directDownloadUrl(file), `dl-${file.id}`)}
+                        className="btn-secondary text-xs py-1.5 px-2"
+                        title="Copy direct download link"
+                      >
+                        {copiedId === `dl-${file.id}` ? <Check className="w-3 h-3 text-green-400" /> : <LinkIcon className="w-3 h-3" />}
                       </button>
                     </div>
 
                     {isEmbeddableMedia(file) && file.embedUrl && (
-                      <div className="flex items-center gap-1 mb-3">
+                      <div className="flex items-center gap-1 mb-3" onClick={(e) => e.stopPropagation()}>
                         <LinkIcon className="w-3 h-3 text-primary-400 shrink-0" />
                         <input
                           type="text"
@@ -977,14 +918,16 @@ export default function DashboardPage() {
                     )}
 
                     {/* Preview Toggle */}
-                    <FilePreview
-                      file={file}
-                      isExpanded={expandedFile === file.id}
-                      onToggle={() => setExpandedFile(expandedFile === file.id ? null : file.id)}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <FilePreview
+                        file={file}
+                        isExpanded={expandedFile === file.id}
+                        onToggle={() => setExpandedFile(expandedFile === file.id ? null : file.id)}
+                      />
+                    </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 mt-auto pt-3 border-t border-dark-600/20">
+                    <div className="flex items-center gap-2 mt-auto pt-3 border-t border-dark-600/20" onClick={(e) => e.stopPropagation()}>
                       {file.hasPassword && (
                         <>
                           <button
@@ -1027,6 +970,40 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        maxUploadBytes={Math.max(0, storageMax - storageUsed)}
+        onCompleted={(results) => {
+          setUploadModalOpen(false)
+          setSuccessFiles(results)
+          loadFiles()
+        }}
+      />
+
+      {/* Upload Success Popup */}
+      <UploadSuccessPopup
+        isOpen={!!successFiles}
+        files={successFiles || []}
+        onClose={() => setSuccessFiles(null)}
+        onCreateAlbum={(fileIds) => {
+          setUploadModalOpen(false)
+          openCreateAlbum(fileIds)
+        }}
+      />
+
+      {/* Album Create/Edit Modal */}
+      <AlbumModal
+        isOpen={albumModal.open}
+        mode={albumModal.mode}
+        files={files.map((f: any) => ({ id: f.id, originalName: f.originalName, type: f.type, size: f.size }))}
+        preselectedFileIds={albumModal.preselectedFileIds}
+        album={albumModal.album || undefined}
+        onClose={() => setAlbumModal((prev) => ({ ...prev, open: false, preselectedFileIds: [] }))}
+        onSaved={handleAlbumSaved}
+      />
 
       {/* Confirm Dialog */}
       <ConfirmDialog
