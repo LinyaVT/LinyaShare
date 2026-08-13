@@ -61,7 +61,10 @@ const egg = {
   startup,
   config: {
     files: '{}',
-    startup: '{"done":["started server on", "listening on"]}',
+    // "Ready in" = Next.js-15-Standalone-Log beim echten Serverstart (das alte
+    // "started server on" loggt Next 15.5 nicht mehr -> sonst nie "Running").
+    // ^C = SIGINT -> deckt sich mit der exec-PID1-Kette in deploy/startup.sh.
+    startup: '{"done":["Ready in", "started server on", "listening on"]}',
     logs: '{}',
     stop: '^C',
   },

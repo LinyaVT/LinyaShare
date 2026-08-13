@@ -12,4 +12,8 @@
 mkdir -p /home/container && cd /home/container || exit 1
 if [ ! -d .git ]; then echo "[startup] Kein Repo gefunden -> git clone"; git clone -b "${GIT_BRANCH:-main}" "${GIT_REPO:-https://github.com/LinyaVT/LinyaShare.git}" .; fi
 export PORT={{SERVER_PORT}}
-bash deploy/startup.sh
+# exec: macht die Kette PID 1 -> bash -> ... -> node entry.js, damit der
+# Init-Wrapper (deploy/entry.js, sieh dort) PID 1 ist. Nur dann erreichen
+# Stop-Signale (^C = SIGINT, sendet FeatherPanel/WINGS) den Prozess direkt,
+# und der Container stoppt sauber statt gehängt zu bleiben.
+exec bash deploy/startup.sh

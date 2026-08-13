@@ -100,6 +100,13 @@ cp -f .env .next/standalone/.env 2>/dev/null || true
 # ── Prisma-Client (Engine) ins Standalone kopieren ───────────────────────────────
 cp -rf node_modules/.prisma .next/standalone/node_modules/ 2>/dev/null || true
 
+# ── Init-Wrapper (PID 1) ─────────────────────────────────────────────────────────
+# entry.js sitzt als PID 1 vor dem Node-Server und fängt SIGINT/SIGTERM UND
+# stdin-"^C"/0x03-Stopps ab, damit FeatherPanel/Pterodactyl den Container
+# immer sauber (Exit 0) stoppt statt zu killen. (Start-stop-Kommentar in
+# startup-launcher.sh beachten.)
+cp -f deploy/entry.js .next/standalone/entry.js
+
 # ── Server starten ────────────────────────────────────────────────────────────────
 cd .next/standalone
-exec env PORT="$PORT" HOSTNAME=0.0.0.0 DATABASE_URL="$DATABASE_URL" node server.js
+exec env PORT="$PORT" HOSTNAME=0.0.0.0 DATABASE_URL="$DATABASE_URL" node entry.js

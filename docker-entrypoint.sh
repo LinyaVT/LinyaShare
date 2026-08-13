@@ -44,4 +44,4 @@ echo "[entrypoint] Applying database schema..."
 npx prisma db push --schema="$SCHEMA_FILE" --skip-generate
 
 echo "[entrypoint] Starting server..."
-exec node server.js
+exec node entry.js

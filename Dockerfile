@@ -59,6 +59,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
+# Init-Wrapper (PID 1) – fängt SIGINT/SIGTERM und stdin-"^C"/0x03-Stopps ab,
+# damit `docker stop` (und Panel-Stopps) sauber mit Exit 0 enden.
+COPY deploy/entry.js /app/entry.js
+
 # Create data directories
 RUN mkdir -p /app/data/uploads /app/data/import && \
     chown -R nextjs:nodejs /app/data /app/prisma /app/.next
