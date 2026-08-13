@@ -23,6 +23,7 @@ model User {
   role      String   @default("USER")
   maxSize   Float    @default(524288000)
   files     File[]
+  albums    Album[]
   events    StatEvent[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -48,7 +49,35 @@ model File {
   isExecutable    Boolean  @default(false)
   storageLocation String   @default("disk") // "disk" | "blob" | "s3" (Zukunft)
   events          StatEvent[]
+  albumItems      AlbumFile[]
   createdAt       DateTime @default(now())
+}
+
+model Album {
+  id            String      @id @default(cuid())
+  shareId       String      @unique
+  name          String
+  description   String?
+  password      String?
+  plainPassword String?
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items         AlbumFile[]
+  views         Int         @default(0)
+  downloads     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model AlbumFile {
+  id        String   @id @default(cuid())
+  albumId   String
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  fileId    String
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([albumId, fileId])
 }
 
 model StatEvent {
