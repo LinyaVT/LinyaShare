@@ -161,7 +161,7 @@ graph LR
 | Project Repository | [github.com/LinyaVT/LinyaShare](https://github.com/LinyaVT/LinyaShare) |
 | Issue Tracker | [GitHub Issues](https://github.com/LinyaVT/LinyaShare/issues) |
 | Main README | [README.md](../README.md) |
-| Egg File | [egg-linyashare.json](../egg-linyashare.json) |
+| Egg File | [egg-linyashare.json](../egg/egg-linyashare.json) |
 
 ---
 

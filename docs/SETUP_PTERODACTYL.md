@@ -132,13 +132,13 @@ bash /home/container/start.sh
 ## Egg File
 
 > [!TIP]
-> The egg configuration is available as a downloadable JSON file at the project root: [`egg-linyashare.json`](../egg-linyashare.json)
+> The egg configuration is available as a downloadable JSON file at the project root: [`egg-linyashare.json`](../egg/egg-linyashare.json)
 
 ### Import Instructions
 
 | Step | Action |
 |------|--------|
-| 1 | Download [`egg-linyashare.json`](../egg-linyashare.json) from the repository |
+| 1 | Download [`egg-linyashare.json`](../egg/egg-linyashare.json) from the repository |
 | 2 | Navigate to your Pterodactyl/FeatherPanel Admin Panel |
 | 3 | Go to Nests > Create New Egg > Import Egg |
 | 4 | Select the downloaded JSON file |

@@ -146,7 +146,7 @@ npm start
 
 ### Pterodactyl / FeatherPanel
 
-1. Download [`egg-linyashare.json`](egg-linyashare.json)
+1. Download [`egg-linyashare.json`](egg/egg-linyashare.json)
 2. Import the egg into your panel
 3. Set `NEXTAUTH_SECRET` and `NEXT_PUBLIC_APP_URL`
 4. **Important**: Increase Wings PID limit from 512 to 2048
