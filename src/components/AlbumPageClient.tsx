@@ -49,8 +49,8 @@ function GallerySkeleton() {
   return (
     <div className="min-h-screen p-4 sm:p-6 relative">
       <div className="max-w-6xl mx-auto">
-        {/* Header skeleton — bewusst OHNE glass-card/backdrop-blur, um Blur-Artefakte
-            (sichtbare Linien/Streifen in der Viewport-Mitte) beim ersten Rendern zu vermeiden */}
+        {/* Header skeleton — deliberately WITHOUT glass-card/backdrop-blur to avoid blur artifacts
+            (visible lines/streaks in the viewport center) on first render */}
         <div className="bg-dark-800/40 border border-dark-600/10 rounded-2xl p-6 sm:p-8 mb-6 relative z-10">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-dark-700 animate-pulse shrink-0" />
@@ -349,7 +349,7 @@ export default function AlbumPageClient({ shareId }: { shareId: string }) {
                       className="group relative aspect-square rounded-xl overflow-hidden border border-dark-600/20 bg-black hover:border-primary-500/40 transition-all hover:scale-[1.02] cursor-pointer"
                       title="Preview video"
                     >
-                      {/* Frame-Vorschau: Browser zeigt das erste Standbild (preload=metadata) */}
+                      {/* Frame preview: the browser shows the first frame (preload=metadata) */}
                       <video
                         src={file.streamUrl}
                         preload="metadata"

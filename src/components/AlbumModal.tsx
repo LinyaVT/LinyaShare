@@ -89,7 +89,7 @@ export default function AlbumModal({
   const visibleContainedIds = new Set(visibleContained.map((i) => i.fileId))
   const availableFiles = files.filter((f) => !visibleContainedIds.has(f.id) && !addedSet.has(f.id))
 
-  // Suche (case-insensitive) für alle Datei-Listen
+  // Search (case-insensitive) for all file lists
   const query = searchQuery.trim().toLowerCase()
   const matchesQuery = (name: string) => !query || name.toLowerCase().includes(query)
 
@@ -290,7 +290,7 @@ export default function AlbumModal({
               />
             </div>
 
-            {/* Suchfeld für die Dateiauswahl */}
+            {/* Search field for the file selection */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />
               <input

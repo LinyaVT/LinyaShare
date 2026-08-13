@@ -72,8 +72,8 @@ export interface FileTypeInfo {
 
 /**
  * Determine the file type category based on MIME type and filename.
- * Spezifische Extension-Kategorien werden vor den generischen MIME-Fallbacks
- * geprüft, damit z.B. eine .jar (zip-MIME) nicht als Archiv gilt.
+ * Specific extension categories are checked before the generic MIME fallbacks,
+ * so e.g. a .jar (zip MIME) is not treated as an archive.
  */
 export function getFileTypeCategory(mimeType: string, fileName: string): FileTypeCategory {
   if (mimeType.startsWith("video/")) return "video"
@@ -95,7 +95,7 @@ export function getFileTypeCategory(mimeType: string, fileName: string): FileTyp
   if (SUBTITLE_EXTENSIONS.test(fileName)) return "subtitle"
   if (DOCUMENT_EXTENSIONS.test(fileName)) return "document"
 
-  // Differenzierte MIME-Fallbacks (für Dateien ohne erkannte Endung)
+  // Differentiated MIME fallbacks (for files without a detected extension)
   if (mimeType.includes("pdf")) return "pdf"
   if (mimeType.includes("sheet") || mimeType.includes("excel")) return "spreadsheet"
   if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "presentation"

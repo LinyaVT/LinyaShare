@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
 
-// Path-Sanitizing für shareId
+// Path sanitization for shareId
 function isValidShareId(shareId: string): boolean {
-  // UUID-Format: nur alphanumerische Zeichen und Bindestriche
+  // UUID format: only alphanumeric characters and hyphens
   return /^[a-zA-Z0-9-]+$/.test(shareId) && shareId.length >= 8 && shareId.length <= 50
 }
 
-// Alte Embed-URL (ohne Dateiname) → auf die neue "direkte" URL mit Dateiendung
-// umleiten, damit Crawler (Discord etc.) sie als Media-Datei erkennen.
+// Old embed URL (without file name) → redirect to the new "direct" URL with file extension
+// so crawlers (Discord etc.) recognize it as a media file.
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ shareId: string }> }
@@ -25,7 +25,7 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Passwort-Check: Bei passwortgeschützten Dateien Embed nicht verfügbar
+    // Password check: embed not available for password-protected files
     const session = await import("@/lib/auth").then(m => m.auth())
     const isOwner = session?.user && file.userId === (session.user as any).id
 

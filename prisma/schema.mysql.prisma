@@ -47,7 +47,7 @@ model File {
   isMediaEmbed    Boolean  @default(false)
   category        String?  // "video" | "audio" | "image" | "executable" | "code" | "pdf" | ...
   isExecutable    Boolean  @default(false)
-  storageLocation String   @default("disk") // "disk" | "blob" | "s3" (Zukunft)
+  storageLocation String   @default("disk") // "disk" | "blob" | "s3" (future)
   events          StatEvent[]
   albumItems      AlbumFile[]
   createdAt       DateTime @default(now())

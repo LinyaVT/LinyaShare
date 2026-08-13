@@ -18,13 +18,13 @@ export default function MobileFileMenu({ file, onCopyShareUrl, onEditPassword, o
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
 
-  // Berechne die Position des Buttons beim Öffnen
+  // Calculate the button position when opening
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setMenuPos({
-        top: rect.bottom + window.scrollY + 4, // 4px Abstand nach unten
-        left: rect.left + window.scrollX - 140, // 140px nach links (Menübreite)
+        top: rect.bottom + window.scrollY + 4, // 4px gap below
+        left: rect.left + window.scrollX - 140, // 140px to the left (menu width)
       })
     }
   }, [isOpen])
@@ -74,7 +74,7 @@ export default function MobileFileMenu({ file, onCopyShareUrl, onEditPassword, o
 
       {isOpen && createPortal(
         <>
-          {/* Backdrop zum Schließen bei Klick außerhalb */}
+          {/* Backdrop to close when clicking outside */}
           <div 
             className="fixed inset-0 z-[9998]" 
             onClick={() => setIsOpen(false)} 

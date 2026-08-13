@@ -17,7 +17,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
   DATABASE_URL="file:/app/prisma/linyashare.db"
   DATABASE_PROVIDER="sqlite"
 elif [ "$DATABASE_PROVIDER" = "sqlite" ] && [ "${DATABASE_URL#file:}" = "$DATABASE_URL" ]; then
-  # SQLite braucht zwingend das file:-Protokoll – sonst startet Prisma nicht.
+  # SQLite strictly needs the file: protocol – otherwise Prisma won't start.
   DATABASE_URL="file:/app/prisma/linyashare.db"
 fi
 export DATABASE_PROVIDER DATABASE_URL

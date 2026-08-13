@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (fileId) {
-      // Bestehenden DB-Import-Eintrag zuweisen
+      // Assign the existing DB import entry
       const file = await claimFile(fileId, userId)
       return NextResponse.json({ success: true, file })
     } else if (fileName) {
-      // Verwaiste Disk-Datei zuweisen (neuer DB-Eintrag)
+      // Assign orphaned disk file (new DB entry)
       const file = await claimOrphanedFile(fileName, userId)
       return NextResponse.json({ success: true, file })
     } else {
@@ -57,10 +57,10 @@ export async function DELETE(request: NextRequest) {
     const { fileId, fileName } = await request.json()
 
     if (fileId) {
-      // DB-Eintrag löschen (mit Disk-Cleanup)
+      // Delete the DB entry (with disk cleanup)
       await deleteFile(fileId)
     } else if (fileName) {
-      // Nur orphaned File auf Disk löschen
+      // Only delete the orphaned file on disk
       await deleteOrphanedFile(fileName)
     } else {
       return NextResponse.json({ error: "fileId or fileName required" }, { status: 400 })

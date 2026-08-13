@@ -4,8 +4,8 @@ import { useMemo, useState } from "react"
 
 // ──────────────────────────────────────────────────────────
 // DEPENDENCY-FREE SVG CHARTS
-// Responsive über viewBox + w-full h-auto. Hover auf einem
-// Balken/Punkt zeigt einen Tooltip mit Datum + exakten Werten.
+// Responsive via viewBox + w-full h-auto. Hovering over a
+// bar/point shows a tooltip with the date + exact values.
 // ──────────────────────────────────────────────────────────
 
 export interface ChartKey {
@@ -34,12 +34,12 @@ function maxValue(data: ChartPoint[]): number {
   return Math.max(max, 1)
 }
 
-// Zeige nur jeden x-ten Label, damit 90 Tage nicht überlappen
+// Only show every nth label so 90 days do not overlap
 function labelEvery(n: number): number {
   return Math.max(1, Math.ceil(n / 9))
 }
 
-// Tooltip horizontal einpassen (nicht über den Rand hinaus)
+// Fit the tooltip horizontally (not beyond the edge)
 function clampPct(pct: number): number {
   return Math.min(Math.max(pct, 11), 89)
 }
@@ -203,7 +203,7 @@ export function LineChart({ data, keys, height = 260 }: ChartProps) {
           </g>
         ))}
 
-        {/* Points (mit vergrößertem Hover-Target) */}
+        {/* Points (with enlarged hover target) */}
         {data.map((p, i) => {
           const x = px(i)
           const y = py(p.values[0] || 0)

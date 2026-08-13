@@ -122,15 +122,15 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
   const [downloading, setDownloading] = useState(false)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
 
-  // Streaming-Preview: Verwende die GET-Route statt blob()
+  // Streaming preview: use the GET route instead of blob()
   const [hasPassword, setHasPassword] = useState(false)
   const [passwordVerified, setPasswordVerified] = useState(false)
 
-  // Verhindert, dass der View mehrfach gezählt wird (StrictMode, Re-Render etc.)
+  // Prevents the view from being counted multiple times (StrictMode, re-renders etc.)
   const viewCountedRef = useRef(false)
 
-  // View zählen: öffentliche Dateien direkt nach erfolgreichem Laden,
-  // passwortgeschützte erst nach erfolgreicher Freigabe (siehe handleVerifyPassword)
+  // Count the view: public files directly after successful loading,
+  // password-protected ones only after successful unlock (see handleVerifyPassword)
   const countView = useCallback(() => {
     if (viewCountedRef.current) return
     viewCountedRef.current = true
@@ -152,7 +152,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
           const pwRequired = data.hasPassword
           setNeedsPassword(pwRequired)
           setHasPassword(pwRequired)
-          // Öffentliche Dateien zählen den View sofort
+          // Public files count the view immediately
           if (!pwRequired) countView()
         } else {
           setError("File not found")
@@ -163,10 +163,10 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     loadInfo()
   }, [shareId, countView])
 
-  // Berechne die Streaming-URL basierend auf Passwort-Status
+  // Calculate the streaming URL based on the password status
   const streamingUrl = useMemo(() => {
     if (!shareId) return null
-    // Wenn kein Passwort nötig → direkter Stream
+    // If no password needed → direct stream
     if (!needsPassword || passwordVerified) {
       return `/api/files/stream/${shareId}${password ? `?password=${encodeURIComponent(password)}` : ''}`
     }
@@ -207,7 +207,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     setError("")
 
     try {
-      // Passwort verifizieren (ohne den Download-Counter zu erhöhen)
+      // Verify password (without increasing the download counter)
       const res = await fetch("/api/files/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -224,11 +224,11 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
         return
       }
 
-      // Passwort korrekt → Streaming-Vorschau aktivieren
-      // und den View zählen (nur nach erfolgreicher Freigabe)
+      // Password correct → enable streaming preview
+      // and count the view (only after successful unlock)
       countView()
       setPasswordVerified(true)
-      setNeedsPassword(false) // Streaming braucht kein Passwort mehr
+      setNeedsPassword(false) // streaming no longer needs the password
     } catch {
       setError("Verification failed")
     } finally {
@@ -241,7 +241,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     setError("")
 
     try {
-      // Bei passwortgeschützten Dateien: erst Passwort verifizieren falls nötig
+      // For password-protected files: verify the password first if necessary
       if (needsPassword && !passwordVerified) {
         const verifyRes = await fetch("/api/files/verify", {
           method: "POST",
@@ -258,11 +258,11 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
         countView()
       }
 
-      // Download-URL bauen (Stream-Endpunkt mit ?download=1)
+      // Build the download URL (stream endpoint with ?download=1)
       const pwParam = password ? `&password=${encodeURIComponent(password)}` : ""
       const downloadUrl = `/api/files/stream/${shareId}?download=1${pwParam}`
 
-      // Nativen Browser-Download verwenden → kein RAM-Verbrauch!
+      // Use the native browser download → no RAM usage!
       const a = document.createElement("a")
       a.href = downloadUrl
       a.download = fileInfo?.originalName || "download"

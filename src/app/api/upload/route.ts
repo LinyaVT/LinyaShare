@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   const isFinal = request.headers.get("x-is-final") === "true";
   const filename = request.headers.get("x-filename");
   const mimeType = request.headers.get("x-mime-type");
-  const password = request.headers.get("x-password") || undefined; // 👈 Passwort aus Header
+  const password = request.headers.get("x-password") || undefined; // 👈 password from header
 
   if (!uploadId || !filename) {
     return NextResponse.json({ error: "Missing upload metadata" }, { status: 400 });
@@ -22,26 +22,26 @@ export async function POST(request: NextRequest) {
   try {
     const nodeStream = Readable.fromWeb(request.body as any);
 
-    // 👇 ENTSCHEIDUNG: Eingeloggter User → /data/uploads, Sonst → /data/import
+    // 👇 DECISION: Logged-in user → /data/uploads, otherwise → /data/import
     const targetDir = isAuthenticated ? 'uploads' : 'import';
 
-    // Immer zuerst den Chunk schreiben
+    // Always write the chunk first
     await saveFileChunk(nodeStream, chunkIndex, uploadId, targetDir);
 
-    // Wenn letzter Chunk: finalisieren
+    // If last chunk: finalize
     if (isFinal) {
       if (isAuthenticated && userId) {
-        // User-Upload → /data/uploads + ACTIVE (inkl. Passwort!)
+        // User upload → /data/uploads + ACTIVE (incl. password!)
         const fileRecord = await finalizeUserUpload(
           uploadId,
           filename,
           mimeType || "application/octet-stream",
           userId,
-          password // 👈 Passwort wird an den Upload übergeben
+          password // 👈 password is passed to the upload
         );
         return NextResponse.json({ success: true, file: fileRecord });
       } else {
-        // Admin-Import (kein Session-User) → /data/import + IMPORT
+        // Admin import (no session user) → /data/import + IMPORT
         const fileRecord = await finalizeImportUpload(
           uploadId,
           filename,

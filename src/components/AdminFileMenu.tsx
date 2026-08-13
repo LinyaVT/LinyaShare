@@ -15,13 +15,13 @@ export default function AdminFileMenu({ file, onDelete }: AdminFileMenuProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
 
-  // Berechne die Position des Buttons beim Öffnen
+  // Calculate the button position when opening
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setMenuPos({
         top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX - 120, // leicht angepasst für die Breite dieses Menüs
+        left: rect.left + window.scrollX - 120, // slightly adjusted for this menu's width
       })
     }
   }, [isOpen])
@@ -39,7 +39,7 @@ export default function AdminFileMenu({ file, onDelete }: AdminFileMenuProps) {
 
       {isOpen && createPortal(
         <>
-          {/* Backdrop zum Schließen bei Klick außerhalb */}
+          {/* Backdrop to close when clicking outside */}
           <div 
             className="fixed inset-0 z-[9998]" 
             onClick={() => setIsOpen(false)} 

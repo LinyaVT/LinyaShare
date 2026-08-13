@@ -3,14 +3,14 @@
     "version": "PTDL_v2",
     "update_url": null
   },
-  "exported_at": "2026-08-13T12:38:43.999Z",
+  "exported_at": "2026-08-13T13:36:37.254Z",
   "name": "LinyaShare",
   "author": "linya@sknif.de",
   "description": "Optimized LinyaShare Egg for Next.js 15 (Standalone).",
   "docker_images": {
     "Node.js 22": "ghcr.io/parkervcp/yolks:nodejs_22"
   },
-  "startup": "mkdir -p /home/container && cd /home/container || exit 1 && if [ ! -d .git ]; then echo \"[startup] Kein Repo gefunden -> git clone\"; git clone -b \"${GIT_BRANCH:-main}\" \"${GIT_REPO:-https://github.com/LinyaVT/LinyaShare.git}\" .; fi && export PORT={{SERVER_PORT}} && exec bash deploy/startup.sh",
+  "startup": "mkdir -p /home/container && cd /home/container || exit 1 && if [ ! -d .git ]; then echo \"[startup] No repo found -> git clone\"; git clone -b \"${GIT_BRANCH:-main}\" \"${GIT_REPO:-https://github.com/LinyaVT/LinyaShare.git}\" .; fi && export PORT={{SERVER_PORT}} && exec bash deploy/startup.sh",
   "config": {
     "files": "{}",
     "startup": "{\"done\":[\"Ready in\", \"started server on\", \"listening on\"]}",

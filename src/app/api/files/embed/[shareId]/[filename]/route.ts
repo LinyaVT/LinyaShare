@@ -5,15 +5,15 @@ import { findFileOnDisk } from "@/lib/file-storage"
 import { buildFileHeaders, buildContentDisposition, isSafeInlineType } from "@/lib/file-security"
 import fs from "fs"
 
-// Path-Sanitizing für shareId
+// Path sanitization for shareId
 function isValidShareId(shareId: string): boolean {
-  // UUID-Format: nur alphanumerische Zeichen und Bindestriche
+  // UUID format: only alphanumeric characters and hyphens
   return /^[a-zA-Z0-9-]+$/.test(shareId) && shareId.length >= 8 && shareId.length <= 50
 }
 
-// Der [filename]-Segment macht aus der URL einen "direkten Link",
-// der mit der Dateiendung endet (z.B. .../embed/{shareId}/video.mp4).
-// Discord & Co. erkennen Video-/Audio-/Bild-Dateien nur an solchen URLs.
+// The [filename] segment turns the URL into a "direct link"
+// that ends with the file extension (e.g. .../embed/{shareId}/video.mp4).
+// Discord & co. only recognize video/audio/image files by such URLs.
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ shareId: string; filename: string }> }
@@ -21,18 +21,18 @@ export async function GET(
   try {
     const { shareId } = await params
 
-    // Path-Sanitizing
+    // Path sanitization
     if (!isValidShareId(shareId)) {
       return NextResponse.json({ error: "Invalid share ID" }, { status: 400 })
     }
 
-    // Datei aus DB holen
+    // Get the file from the DB
     const file = await getFileByShareId(shareId)
     if (!file) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Passwort-Check: Bei passwortgeschützten Dateien Embed nicht verfügbar
+    // Password check: embed not available for password-protected files
     const session = await import("@/lib/auth").then(m => m.auth())
     const isOwner = session?.user && file.userId === (session.user as any).id
 
@@ -43,12 +43,12 @@ export async function GET(
     const mimeType = file.type || "application/octet-stream"
     const rawName = file.originalName || file.name
 
-    // Aktive Inhalte (SVG, HTML, JS, XML, etc.) nie als Embed ausliefern
+    // Never deliver active content (SVG, HTML, JS, XML, etc.) as embed
     if (!isSafeInlineType(mimeType, rawName)) {
       return NextResponse.json({ error: "Blocked" }, { status: 403 })
     }
 
-    // Datei auf Disk finden (zentrale Pfad-Logik, inkl. User-Ordner)
+    // Find the file on disk (central path logic, incl. user folder)
     const filePath = findFileOnDisk(file)
     if (!filePath) {
       return NextResponse.json({ error: "File not found on disk" }, { status: 404 })
@@ -57,7 +57,7 @@ export async function GET(
     const stat = fs.statSync(filePath)
     const fileSize = stat.size
 
-    // Range-Request Support (für Video/Audio Streaming)
+    // Range request support (for video/audio streaming)
     const rangeHeader = request.headers.get("range")
     let start = 0
     let end = fileSize - 1
@@ -74,14 +74,14 @@ export async function GET(
 
     const contentLength = end - start + 1
 
-    // Streaming mit 64KB Chunks.
-    // nodeStreamToWeb() statt Readable.toWeb() vermeidet den
-    // "Controller is already closed"-uncaughtException-Bug (nodejs/node#64529)
-    // bei abgebrochenen Verbindungen (HEAD, Video-Seek, Client-Disconnect).
+    // Streaming with 64KB chunks.
+    // nodeStreamToWeb() instead of Readable.toWeb() avoids the
+    // "Controller is already closed" uncaughtException bug (nodejs/node#64529)
+    // on aborted connections (HEAD, video seek, client disconnect).
     const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 })
     const readableStream = nodeStreamToWeb(nodeStream)
 
-    // Embed: Nur sichere, verifizierte Typen werden inline ausgeliefert (isSafeInlineType oben geprüft)
+    // Embed: only safe, verified types are delivered inline (isSafeInlineType checked above)
     const contentDisposition = buildContentDisposition(rawName, "inline")
 
     const headers = buildFileHeaders(

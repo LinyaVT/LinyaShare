@@ -1,10 +1,10 @@
 import path from 'path'
 import { PrismaClient } from '@prisma/client'
 
-// Absicherung: Falls auf dem Server nichts (Panel-Env, .env-Datei) eine
-// DATABASE_URL durchreicht, fällt die App auf die eingebaute SQLite-Datenbank
-// zurück. Erkennung anhand des Standalone-pfads: Der Server läuft dort aus
-// `.next/standalone` heraus, die Datenbank liegt eine Ebene darüber in `prisma/`.
+// Safety net: If nothing on the server (panel env, .env file) passes a
+// DATABASE_URL, the app falls back to the built-in SQLite database.
+// Detected via the standalone path: the server runs from
+// `.next/standalone` there, the database sits one level above in `prisma/`.
 if (!process.env.DATABASE_URL) {
   const cwd = process.cwd().replace(/[\\/]+$/, '')
   const isStandalone = path.basename(cwd) === 'standalone'

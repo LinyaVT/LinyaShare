@@ -4,7 +4,7 @@ const pkg = require('./package.json')
 const nextConfig = {
   output: 'standalone',
   env: {
-    // Build-Zeit-Version direkt aus package.json (Single Source of Truth)
+    // Build-time version straight from package.json (single source of truth)
     NEXT_PUBLIC_APP_VERSION: pkg.version,
   },
 }

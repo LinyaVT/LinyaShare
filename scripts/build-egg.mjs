@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// LinyaShare – Egg-Generator
-// Erzeugt aus `deploy/startup-launcher.sh` (und fest hinterlegten Metadaten)
-// das neu formatierte Egg nach `egg/egg-linyashare.json`.
+// LinyaShare – Egg generator
+// Generates the newly formatted egg from `deploy/startup-launcher.sh` (and
+// hardcoded metadata) into `egg/egg-linyashare.json`.
 //
 //   npm run egg:create
 //
-// Vorteile gegenüber Hand-Pflege des alten JSON:
-//   - Kein manuelles JSON-Escaping mehr (die Startup-Quelle ist eine lesbare
-//     Bash-Datei und wird hier automatisch in einen Einzeiler gepresst).
-//   - Der durch `JSON.stringify` erzeugte Startup ist garantiert korrekt escaped.
+// Advantages over hand-maintaining the old JSON:
+//   - No more manual JSON escaping (the startup source is a readable bash file
+//     and is automatically squeezed into a single line here).
+//   - The startup produced by `JSON.stringify` is guaranteed to be escaped correctly.
 // ─────────────────────────────────────────────────────────────────────────────
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,9 +16,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// ── Quelle des Startbefehls ─────────────────────────────────────────────────
-// Jede Zeile = eine vollständige Shell-Anweisung (Inline-`if`) – wird mit " && "
-// zu dem Einzeiler verbunden, den Pterodactyl/FeatherPanel im Egg-Startup braucht.
+// ── Source of the start command ───────────────────────────────────────────────
+// Each line = one full shell statement (inline `if`) – joined with " && "
+// into the single line that Pterodactyl/FeatherPanel needs in the egg startup.
 function compressLauncher(relPath) {
   const file = path.join(ROOT, relPath);
   const lines = fs
@@ -27,21 +27,21 @@ function compressLauncher(relPath) {
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'));
 
-  if (lines.length === 0) throw new Error(`keine Befehle in ${relPath}`);
+  if (lines.length === 0) throw new Error(`no commands in ${relPath}`);
   return lines.join(' && ');
 }
 
 const startup = compressLauncher('deploy/startup-launcher.sh');
 
-// Minimal-Check gegen bekannte Panel-Template-Probleme:
+// Minimal check against known panel-template issues:
 const mangleRisk = /\$\{DATABASE_URL\}/.test(startup);
 if (mangleRisk) {
   throw new Error(
-    'Der Launcher enthält `${DATABASE_URL}` (Panel-substituiert!). Logik gehört nach deploy/startup.sh.',
+    'The launcher contains `${DATABASE_URL}` (panel-substituted!). Logic belongs in deploy/startup.sh.',
   );
 }
 
-// ── Metadaten / Variablen (Quelle der Wahrheit) ──────────────────────────────
+// ── Metadata / variables (source of truth) ────────────────────────────────────
 const INSTALL_SCRIPT = [
   'export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y git curl ca-certificates python3 make g++ && mkdir -p /mnt/server && cd /mnt/server && git clone -b "${GIT_BRANCH:-main}" "${GIT_REPO:-https://github.com/LinyaVT/LinyaShare.git}" . && npm install',
 ].join('');
@@ -61,9 +61,9 @@ const egg = {
   startup,
   config: {
     files: '{}',
-    // "Ready in" = Next.js-15-Standalone-Log beim echten Serverstart (das alte
-    // "started server on" loggt Next 15.5 nicht mehr -> sonst nie "Running").
-    // ^C = SIGINT -> deckt sich mit der exec-PID1-Kette in deploy/startup.sh.
+    // "Ready in" = Next.js-15 standalone log on the real server start (the old
+    // "started server on" is no longer logged by Next 15.5 -> otherwise never "Running").
+    // ^C = SIGINT -> matches the exec PID-1 chain in deploy/startup.sh.
     startup: '{"done":["Ready in", "started server on", "listening on"]}',
     logs: '{}',
     stop: '^C',
@@ -162,16 +162,16 @@ const egg = {
   ],
 };
 
-// ── Ausgabe schreiben + validieren ────────────────────────────────────────────
+// ── Write + validate the output ────────────────────────────────────────────────
 const outDir = path.join(ROOT, 'egg');
 fs.mkdirSync(outDir, { recursive: true });
 const outFile = path.join(outDir, 'egg-linyashare.json');
 const json = JSON.stringify(egg, null, 2) + '\n';
 fs.writeFileSync(outFile, json);
 
-// Re-Parse zur Validierung
+// Re-parse for validation
 JSON.parse(json);
 
-console.log('✓ egg/egg-linyashare.json geschrieben (JSON valide)');
-console.log('─ gerenderter Startup (zur Sichtprüfung) ─');
+console.log('✓ egg/egg-linyashare.json written (JSON valid)');
+console.log('─ rendered startup (for visual inspection) ─');
 console.log(startup.split(' && ').map((l, i) => String(i + 1).padStart(2, ' ') + '  ' + l).join('\n'));

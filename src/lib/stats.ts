@@ -9,9 +9,9 @@ export interface StatEventInput {
 }
 
 /**
- * Loggt ein Statistik-Event (fire-and-forget).
- * Fehler werden bewusst ignoriert, damit der Hot-Path
- * (Download / Upload / View) nie durch das Logging blockiert wird.
+ * Logs a statistics event (fire-and-forget).
+ * Errors are deliberately ignored so the hot path
+ * (download / upload / view) is never blocked by logging.
  */
 export function logStatEvent(type: StatEventType, input: StatEventInput = {}) {
   prisma.statEvent

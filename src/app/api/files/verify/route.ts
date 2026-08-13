@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { getFileByShareId } from "@/lib/upload"
 import bcrypt from "bcryptjs"
 
-// Reine Passwort-Verifikation (kein Download, kein Counter-Inkrement).
-// Wird von der Share-Seite aufgerufen, um die Vorschau zu entsperren,
-// ohne den Download-Counter zu erhöhen.
+// Pure password verification (no download, no counter increment).
+// Called by the share page to unlock the preview
+// without increasing the download counter.
 export async function POST(request: NextRequest) {
   try {
     const { shareId, password } = await request.json()

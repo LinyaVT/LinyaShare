@@ -6,10 +6,10 @@ import { getAlbumByShareId, verifyAlbumPassword, getAlbumZipEntries, buildZipDis
 import { logStatEvent } from "@/lib/stats";
 
 /**
- * Streaming-ZIP aller öffentlich zugänglichen Dateien eines Albums.
- * - Album-Name (falls Passwort gesetzt) schützt den Download.
- * - ZIP-Inhalt: Ordner mit der Album-shareId, enthält jede Datei mit Originalname.
- * - Dateien mit eigenem Passwort sind NICHT enthalten (nur einzeln freischaltbar).
+ * Streaming ZIP of all publicly accessible files of an album.
+ * - Album name (if password set) protects the download.
+ * - ZIP content: folder with the album shareId, contains every file with original name.
+ * - Files with their own password are NOT included (only unlockable individually).
  */
 export async function GET(
   request: NextRequest,
@@ -22,7 +22,7 @@ export async function GET(
     return NextResponse.json({ error: "Album not found" }, { status: 404 });
   }
 
-  // Owner umgeht das Album-Passwort
+  // The owner bypasses the album password
   const session = await auth();
   const isOwner = session?.user && album.userId === (session.user as any).id;
 
@@ -44,8 +44,8 @@ export async function GET(
 
   const archive = new ZipArchive({ zlib: { level: 1 } });
 
-  // Dateien direkt im ZIP-Root ablegen. Bei Namensgleichheit wird ein Suffix ergänzt,
-  // damit keine Duplikat-Einträge entstehen.
+  // Place files directly in the ZIP root. On name collision a suffix is added
+  // so no duplicate entries are created.
   const usedNames = new Map<string, number>();
   const namedEntries = entries.map((entry) => {
     const originalName = entry.originalName || "file";
@@ -64,7 +64,7 @@ export async function GET(
     });
   }
 
-  // Download-Zähler + Stats (fire-and-forget)
+  // Download counter + stats (fire-and-forget)
   incrementAlbumDownloads(shareId);
   logStatEvent("DOWNLOAD", { size: entries.reduce((s, e) => s + e.size, 0) });
 

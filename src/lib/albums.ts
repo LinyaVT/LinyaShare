@@ -28,7 +28,7 @@ export async function createAlbum({
   password?: string;
   fileIds: string[];
 }) {
-  // Nur Dateien verwenden, die dem User gehören und aktiv sind
+  // Only use files that belong to the user and are active
   const ownedFiles = await prisma.file.findMany({
     where: { id: { in: fileIds }, userId, status: "ACTIVE" },
     select: { id: true },
@@ -213,7 +213,7 @@ export async function incrementAlbumDownloads(shareId: string) {
 }
 
 // ──────────────────────────────────────────────────────────
-// ZIP DOWNLOAD (Streaming) — ZIPP-ENTRIES
+// ZIP DOWNLOAD (Streaming) — ZIP ENTRIES
 // ──────────────────────────────────────────────────────────
 export type ZipEntry = {
   fileId: string;
@@ -223,10 +223,10 @@ export type ZipEntry = {
 };
 
 /**
- * Liefert die Dateien, die in den "Download all"-ZIP gehören:
- * Alle öffentlich zugänglichen Dateien (ohne eigenes Passwort),
- * deren Datei auf der Platte existiert. Dateien mit eigenem Passwort
- * werden ausgelassen (können nur einzeln freigeschaltet werden).
+ * Returns the files that belong in the "Download all" ZIP:
+ * All publicly accessible files (without their own password)
+ * whose file exists on disk. Files with their own password
+ * are excluded (can only be unlocked individually).
  */
 export function getAlbumZipEntries(album: {
   shareId: string;
@@ -235,7 +235,7 @@ export function getAlbumZipEntries(album: {
   const entries: ZipEntry[] = [];
 
   for (const item of album.items) {
-    if (item.file.password) continue; // einzeln geschützt → nicht im ZIP
+    if (item.file.password) continue; // individually protected → not in the ZIP
     const filePath = findFileOnDisk(item.file as any);
     if (!filePath) continue;
     entries.push({
@@ -250,7 +250,7 @@ export function getAlbumZipEntries(album: {
 }
 
 /**
- * Content-Disposition für den ZIP-Download: Dateiname = Album-Name.
+ * Content-Disposition for the ZIP download: file name = album name.
  */
 export function buildZipDisposition(albumName: string): string {
   const safeName = `${albumName.replace(/[^\w.\-() ]+/g, "").replace(/\s+/g, " ").trim() || "album"}.zip`;

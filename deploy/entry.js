@@ -1,22 +1,21 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-// LinyaShare – Init-Wrapper (PID 1)
+// LinyaShare – Init wrapper (PID 1)
 //
-// Warum: FeatherPanel/Pterodactyl-"^C"-Stopps sind historisch inkonsistent.
-//   - manche Daemons senden SIGINT,
-//   - andere fallen auf SIGTERM zurück (auch `docker stop`),
-//   - manche schreiben den Stopp ohne Signal an stdin (^C = 0x03),
-//   - und wenn die Konsole/TTY geschlossen wird, kommt zusätzlich SIGHUP.
+// Why: FeatherPanel/Pterodactyl "^C" stops are historically inconsistent.
+//   - some daemons send SIGINT,
+//   - others fall back to SIGTERM (also `docker stop`),
+//   - some write the stop to stdin without a signal (^C = 0x03),
+//   - and when the console/TTY is closed, an additional SIGHUP arrives.
 //
-// WICHTIG (PID-1-Kette): Dieser Wrapper MUSS selbst PID 1 sein. Starte ihn
-// über `export ... && cd .next/standalone && exec node entry.js` – NICHT über
-// `exec env X=1 node entry.js`, denn dann würde `env` PID 1 werden und diesen
-// Wrapper nur als (nicht reagierendes) Kind forken. Stopps erreichen ihn dann
-// nicht mehr.
+// IMPORTANT (PID-1 chain): This wrapper MUST be PID 1 itself. Start it via
+// `export ... && cd .next/standalone && exec node entry.js` – NOT via
+// `exec env X=1 node entry.js`, because then `env` would become PID 1 and only
+// fork this wrapper as a (non-reacting) child. Stops would then never reach it.
 //
-// Bei JEDEM erkannten Stopp wird die Diagnose in eine Log-Datei geschrieben
-// (und auf stderr ausgegeben) und der Server beendet – garantierter Exit 0,
-// damit das Panel einen sauberen "Stop" statt eines hängenden "Stopping" sieht.
+// On EVERY detected stop the diagnosis is written to a log file (and printed to
+// stderr) and the server exits – guaranteed exit 0, so the panel sees a clean
+// "Stop" instead of a hanging "Stopping".
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { spawn } = require('node:child_process')
@@ -34,8 +33,8 @@ function log(msg) {
 }
 
 log(
-  `Wrapper gestartet: PID=${process.pid} PPID=${process.ppid} ` +
-  `stdin=${process.stdin.isTTY ? 'tty' : 'nicht-tty'} hub=${process.stdin.isTTY && process.stdin.hasColors ? 'yes' : 'no'}`
+  `Wrapper started: PID=${process.pid} PPID=${process.ppid} ` +
+  `stdin=${process.stdin.isTTY ? 'tty' : 'non-tty'} hub=${process.stdin.isTTY && process.stdin.hasColors ? 'yes' : 'no'}`
 )
 
 let child
@@ -44,17 +43,16 @@ let initiatedShutdown = false
 function shutdown(source) {
   if (initiatedShutdown) return
   initiatedShutdown = true
-  log(`Stopp '${source}' erkannt – Server wird beendet`)
-  try { child.kill('SIGTERM') } catch (e) { log(`SIGTERM fehlgeschlagen: ${e.message}`) }
-  // Sicherheitsnetz 1: hängt der Server am SIGTERM, wird nach 4 s hart beendet.
+  log(`Stop '${source}' detected – terminating the server`)
+  try { child.kill('SIGTERM') } catch (e) { log(`SIGTERM failed: ${e.message}`) }
+  // Safety net 1: if the server hangs on SIGTERM, force-kill after 4 s.
   setTimeout(() => {
     if (!initiatedShutdown) return
-    log('SIGTERM ignoriert – sende SIGKILL')
-    try { child.kill('SIGKILL') } catch (e) { /* bereits beendet */ }
-    // Sicherheitsnetz 2: Selbst wenn das Kind sich weigert zu sterben, den
-    // Prozess endgültig beenden – der Docker/Panel-Grace-Timeout darf nie hier
-    // hängen bleiben.
-    setTimeout(() => { log('Notausstieg'); process.exit(0) }, 1000).unref()
+    log('SIGTERM ignored – sending SIGKILL')
+    try { child.kill('SIGKILL') } catch (e) { /* already terminated */ }
+    // Safety net 2: even if the child refuses to die, terminate the process
+    // for good – the Docker/panel grace timeout must never hang here.
+    setTimeout(() => { log('Emergency exit'); process.exit(0) }, 1000).unref()
   }, 4000).unref()
 }
 
@@ -64,29 +62,29 @@ child = spawn('node', [SERVER_SCRIPT], {
 })
 
 child.on('error', (err) => {
-  log(`Server-Start fehlgeschlagen: ${err.message}`)
+  log(`Server start failed: ${err.message}`)
   process.exit(1)
 })
 
 child.on('close', (code, signal) => {
   if (initiatedShutdown) {
-    log(`Server beendet (code=${code} signal=${signal}) – sauberer Exit 0`)
+    log(`Server exited (code=${code} signal=${signal}) – clean exit 0`)
     process.exit(0)
   }
-  log(`Server unerwartet beendet (code=${code} signal=${signal}) – Exit wird durchgereicht`)
+  log(`Server exited unexpectedly (code=${code} signal=${signal}) – passing through exit code`)
   process.exit(code ?? 1)
 })
 
-// ── Signale (CTRL+C am TTY, docker stop, Panel-Stop, Konsole geschlossen) ──
+// ── Signals (CTRL+C on TTY, docker stop, panel stop, console closed) ──
 process.on('SIGINT', () => shutdown('SIGINT'))
 process.on('SIGTERM', () => shutdown('SIGTERM'))
 process.on('SIGHUP', () => shutdown('SIGHUP'))
 
-// ── Stdin-"^C": Panels, die den Stopp als Bytes an stdin schreiben ───────────
+// ── stdin "^C": panels that write the stop as bytes to stdin ────────────────
 process.stdin.resume()
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', (chunk) => {
   const s = String(chunk)
   if (/[\u0003]/.test(s) || s.includes('^C')) shutdown('stdin^C (data=' + JSON.stringify(s) + ')')
 })
-process.stdin.on('error', () => { /* stdin geschlossen – kein Grund zum Beenden */ })
+process.stdin.on('error', () => { /* stdin closed – no reason to exit */ })

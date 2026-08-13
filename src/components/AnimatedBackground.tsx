@@ -73,8 +73,8 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
   const enabledRef = useRef((theme?.backgroundType ?? "particles") === "particles")
   const [enabled, setEnabled] = useState(enabledRef.current)
 
-  // Farb- & Aktiv-Sync: liest CSS-Variablen + data-attribut vom <html>
-  // (so reagiert die Vorschau im Admin-Settings live auf Änderungen)
+  // Color & activity sync: reads CSS variables + data attribute from <html>
+  // (so the preview in Admin Settings reacts live to changes)
   const syncFromDom = useCallback(() => {
     const root = document.documentElement
 
@@ -398,7 +398,7 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
       if (p.y < -20) p.y = height + 20
       if (p.y > height + 20) p.y = -20
 
-      // Pulsierende Opazität + Grösse (sanftes "Atmen")
+      // Pulsating opacity + size (gentle "breathing")
       const pulse = Math.sin(now * 0.001 * p.speed * 0.5 + p.phase)
       p.alpha = p.baseAlpha + (pulse * 0.1)
       const pulsedBase = p.baseSize * (1 + pulse * 0.22)
@@ -457,7 +457,7 @@ export default function AnimatedBackground({ theme }: { theme?: ThemeConfig }) {
         ctx.strokeStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${0.5 * glow * dim})`
         ctx.stroke()
       } else if (p.size > 3) {
-        // Leichter Glow um grössere Partikel
+        // Slight glow around larger particles
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size * 1.8, 0, Math.PI * 2)
         ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${alpha * 0.15})`

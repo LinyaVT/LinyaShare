@@ -74,11 +74,11 @@ the new version appears in the header everywhere (public pages, dashboard, admin
 |-------|-----------|------------|
 | ![Login](./docs/img/login.png) | ![Dashboard](./docs/img/dashboard.png) | ![Appearance](./docs/img/appearance.png) |
 
-| Hub (default) | Hub (türkis) | Hub (blue-light) |
+| Hub (default) | Hub (turquoise) | Hub (blue-light) |
 |---------------|------------|----------------|
 | ![Hub default](./docs/img/hub_default.png) | ![Hub blue](./docs/img/hub_tuerkis.png) | ![Hub blue-red](./docs/img/hub_hub_blue-light.png) |
 
-| Hub (lila) | Hub (green) | Hub (orange) |
+| Hub (purple) | Hub (green) | Hub (orange) |
 |------------|-------------|--------------------|
 | ![Hub pink](./docs/img/hub_lila.png) | ![Hub green](./docs/img/hub_green.png) | ![Hub green-yellow](./docs/img/hub_orange.png) |
 

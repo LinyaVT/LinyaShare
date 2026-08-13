@@ -7,11 +7,11 @@ import { getBuiltinFontCss, getCustomFontCss, resolveFontFile, FONT_MIME } from 
 
 // ──────────────────────────────────────────────────────────
 // PUBLIC FONT SERVING
-// GET /api/fonts/<font>/style.css   → @font-face-CSS (local, cached)
-// GET /api/fonts/<font>/<file>      → Font-Datei (woff2/woff/ttf/otf)
-// Builtin-Fonts werden beim ersten Aufruf einmalig heruntergeladen und
-// lokal gecacht; Custom-Fonts (data/uploads/global/fonts/custom) werden
-// direkt ausgeliefert. Öffentliche Route – keine Auth nötig.
+// GET /api/fonts/<font>/style.css   → @font-face CSS (local, cached)
+// GET /api/fonts/<font>/<file>      → Font file (woff2/woff/ttf/otf)
+// Built-in fonts are downloaded once on first call and
+// cached locally; custom fonts (data/uploads/global/fonts/custom) are
+// served directly. Public route – no auth needed.
 // ──────────────────────────────────────────────────────────
 
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ export async function GET(
 ) {
   const { font, file } = await context.params;
   try {
-    // CSS für font-face laden
+    // Load the CSS for the font-face
     if (file === "style.css") {
       let css: string;
       if (FONT_MAP[font]) {
@@ -40,7 +40,7 @@ export async function GET(
       });
     }
 
-    // Font-Datei ausliefern
+    // Deliver the font file
     const resolved = resolveFontFile(font, file);
     if (!resolved || !existsSync(resolved.absPath)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -53,8 +53,8 @@ export async function GET(
       headers: {
         "Content-Type": mime,
         "Content-Length": buf.length.toString(),
-        // Builtin-woff2 werden nie überschrieben → immutable. Custom-Fonts
-        // können neu hochgeladen werden → kürzeres Cache-Fenster.
+        // Built-in woff2 files are never overwritten → immutable. Custom fonts
+        // can be re-uploaded → shorter cache window.
         "Cache-Control": resolved.isCustom
           ? "public, max-age=3600"
           : "public, max-age=31536000, immutable",

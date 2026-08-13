@@ -36,7 +36,7 @@ export default function AlbumsSection({
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Suche (case-insensitive) über den Album-Namen
+  // Search (case-insensitive) over the album name
   const query = searchQuery.trim().toLowerCase()
   const filteredAlbums = albums.filter((a) => !query || a.name.toLowerCase().includes(query))
 
@@ -87,7 +87,7 @@ export default function AlbumsSection({
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            {/* Suchfeld für Alben */}
+            {/* Search field for albums */}
             {!loading && albums.length > 0 && (
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400 pointer-events-none" />

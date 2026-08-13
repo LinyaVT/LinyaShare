@@ -32,15 +32,15 @@ export async function DELETE(request: NextRequest) {
     
     const file = await prisma.file.findUnique({ where: { id: fileId } })
     if (!file) {
-      return NextResponse.json({ error: "Datei nicht gefunden" }, { status: 404 })
+      return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Delete from disk (zentrale Pfad-Logik, inkl. User-Ordner)
+    // Delete from disk (central path logic, incl. user folder)
     await removeFileFromDisk(file)
 
     await prisma.file.delete({ where: { id: fileId } })
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Löschen fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Deletion failed" }, { status: 500 })
   }
 }

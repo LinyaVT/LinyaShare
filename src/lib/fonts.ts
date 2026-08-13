@@ -7,14 +7,14 @@ import { FONT_MAP } from "./theme";
 // ──────────────────────────────────────────────────────────
 // SELF-HOSTED FONTS
 // ──────────────────────────────────────────────────────────
-// Builtin-Fonts (FONT_MAP) werden beim ersten Aufruf einmalig von
-// Google Fonts geladen und unter FONTS_DIR/<key>/ als woff2 + style.css
-// gecacht. Danach liefert der Server alles lokal aus.
-// Custom-Fonts (Admin-Upload) liegen unter CUSTOM_FONTS_DIR/<key>/ mit
-// bereits generiertem style.css.
+// Built-in fonts (FONT_MAP) are downloaded once from Google Fonts on the
+// first call and cached under FONTS_DIR/<key>/ as woff2 + style.css.
+// After that the server serves everything locally.
+// Custom fonts (admin upload) live under CUSTOM_FONTS_DIR/<key>/ with
+// an already generated style.css.
 //
-// Wichtig: Nur der latin-Subset wird geladen (reicht für Deutsch inkl.
-// ä/ö/ü/ß) – spart ~80% Download-Volumen gegenüber allen Subsets.
+// Note: Only the latin subset is loaded (covers German incl.
+// ä/ö/ü/ß) - saves ~80% download volume compared to all subsets.
 
 const CHROME_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -22,8 +22,8 @@ const CHROME_UA =
 const SAFE_KEY_RE = /^[a-zA-Z0-9][a-zA-Z0-9 _-]*$/
 const SAFE_FILE_RE = /^[a-zA-Z0-9._-]+$/
 
-// Dedupe gleichzeitiger Downloads pro Font (sonst könnten parallele
-// Erstaufrufe denselben Font mehrfach herunterladen).
+// Dedupe concurrent downloads per font (otherwise parallel
+// first calls could download the same font multiple times).
 const inFlight = new Map<string, Promise<string>>()
 
 function isSafeKey(key: string): boolean {
@@ -44,7 +44,7 @@ async function ensureDir(dir: string): Promise<void> {
 }
 
 // ──────────────────────────────────────────────────────────
-// GOOGLE-CSS → @font-face (latin gefiltert)
+// GOOGLE-CSS → @font-face (latin filtered)
 // ──────────────────────────────────────────────────────────
 
 interface FontFace {
@@ -88,9 +88,9 @@ function parseFontFaces(css: string): FontFace[] {
   return faces
 }
 
-// Nur latin behalten: Google's latin-Subset startet mit U+0000-00FF
-// (deckt lateinische + Basiszeichen, auch ä/ö/ü/ß ab). Fallback: URL
-// enthält "-latin.".
+// Keep only latin: Google's latin subset starts with U+0000-00FF
+// (covers latin + basic chars, also ä/ö/ü/ß). Fallback: URL
+// contains "-latin.".
 function isLatin(face: FontFace): boolean {
   if (face.unicodeRange.includes("U+0000-00FF")) return true
   return /-latin[\-.]/.test(face.url)
@@ -121,7 +121,7 @@ async function downloadWoff2(url: string, dir: string): Promise<string> {
   const dest = path.join(dir, fileName)
   if (!existsSync(dest)) {
     const res = await fetch(url, { headers: { "User-Agent": CHROME_UA } })
-    if (!res.ok) throw new Error(`Font-Download fehlgeschlagen: ${res.status}`)
+    if (!res.ok) throw new Error(`Font download failed: ${res.status}`)
     const buf = Buffer.from(await res.arrayBuffer())
     await writeFile(dest, buf)
     await chmod(dest, 0o644).catch(() => {})
@@ -132,13 +132,13 @@ async function downloadWoff2(url: string, dir: string): Promise<string> {
 async function downloadBuiltinFont(key: string): Promise<string> {
   const entry = FONT_MAP[key]
   if (!entry) throw new Error("Unknown font")
-  if (!entry.googleUrl) throw new Error(`Kein Google-Quell-URL für "${key}"`)
+  if (!entry.googleUrl) throw new Error(`No Google source URL for "${key}"`)
   const res = await fetch(entry.googleUrl, { headers: { "User-Agent": CHROME_UA } })
-  if (!res.ok) throw new Error(`Google-Fonts-Request fehlgeschlagen: ${res.status}`)
+  if (!res.ok) throw new Error(`Google Fonts request failed: ${res.status}`)
   const css = await res.text()
 
   const faces = parseFontFaces(css).filter(isLatin)
-  if (faces.length === 0) throw new Error("Keine latin-Font-Faces gefunden")
+  if (faces.length === 0) throw new Error("No latin font faces found")
 
   const dir = builtinDir(key)
   await ensureDir(dir)
@@ -154,7 +154,7 @@ async function downloadBuiltinFont(key: string): Promise<string> {
   return out
 }
 
-/** Liefert das CSS für einen Builtin-Font (downloadt ihn beim ersten Aufruf). */
+/** Returns the CSS for a built-in font (downloads it on first call). */
 export async function getBuiltinFontCss(key: string): Promise<string> {
   const dir = builtinDir(key)
   const cssPath = path.join(dir, "style.css")
@@ -176,7 +176,7 @@ export async function getBuiltinFontCss(key: string): Promise<string> {
 // CUSTOM FONTS (Admin-Upload)
 // ──────────────────────────────────────────────────────────
 
-/** Liefert das beim Upload generierte @font-face-CSS eines Custom-Fonts. */
+/** Returns the @font-face CSS of a custom font generated on upload. */
 export async function getCustomFontCss(key: string): Promise<string> {
   const cssPath = path.join(customDir(key), "style.css")
   if (!existsSync(cssPath)) throw new Error("Not found")
@@ -184,8 +184,8 @@ export async function getCustomFontCss(key: string): Promise<string> {
 }
 
 /**
- * Prüft key/file auf Sicherheit und liefert den absoluten Pfad,
- * garantiert innerhalb des Font-Verzeichnisses (kein Path-Traversal).
+ * Checks key/file for safety and returns the absolute path,
+ * guaranteed to be inside the font directory (no path traversal).
  */
 export function resolveFontFile(key: string, file: string): { absPath: string; isCustom: boolean } | null {
   if (!isSafeKey(key) || !isSafeFile(file)) return null

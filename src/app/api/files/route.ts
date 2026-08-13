@@ -34,8 +34,8 @@ export async function GET() {
 
   return NextResponse.json({
     files: files.map((f) => {
-      // Direkter Media-Link mit Dateiendung (endet auf .mp4 etc.) für Discord & Co.
-      // Nur für Dateien unter 50MB – größere Dateien bekommen keinen Embed-Link.
+      // Direct media link with file extension (ends with .mp4 etc.) for Discord & co.
+      // Only for files under 50MB – larger files get no embed link.
       const embedUrl = f.isMediaEmbed && !f.password && f.size < MAX_EMBED_SIZE
         ? `${baseUrl}/api/files/embed/${f.shareId}/${encodeURIComponent(f.originalName)}`
         : undefined

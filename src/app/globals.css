@@ -4,7 +4,7 @@
 
 /* ──────────────────────────────────────────────────────────
    DEFAULT THEME VARIABLES
-   (werden zur Laufzeit vom Server / Admin-Settings überschrieben)
+   (overridden at runtime by the server / Admin Settings)
    ────────────────────────────────────────────────────────── */
 :root {
   --primary-50: 251 229 239;
@@ -50,12 +50,12 @@
 
 /* ──────────────────────────────────────────────────────────
    LIGHT MODE ("White Mode")
-   data-theme="light" auf <html> geschaltet durch den
-   ThemeToggle (Header). Höhere Spezifität als :root → gewinnt
-   auch gegen das serverseitig injizierte `:root{…}`.
+   data-theme="light" on <html> toggled by the
+   ThemeToggle (Header). Higher specificity than :root → wins
+   even against the server-injected `:root{…}`.
    ────────────────────────────────────────────────────────── */
 :root[data-theme="light"] {
-  /* Invertierte Grauskala: helle Flächen, dunkle Texte */
+  /* Inverted grayscale: light surfaces, dark text */
   --dark-50: 15 23 42;
   --dark-100: 15 23 42;
   --dark-200: 30 41 59;
@@ -67,32 +67,32 @@
   --dark-800: 255 255 255;
   --dark-900: 241 245 249;
 
-  /* !important: gewinnt auch gegen die Inline-CSS-Variablen, die die
-     Live-Vorschau der Admin-Settings auf <html> schreibt */
+  /* !important: wins even against the inline CSS variables that the
+     Admin Settings live preview writes to <html> */
   --background-color: #f1f5f9 !important;
   --background-image: none !important;
   --background-attachment: scroll !important;
   --particle-color: 100 116 139 !important;
 
-  /* Weiß wird im Light-Mode zu dunkler Schriftfarbe (deckt auch
-     hover:text-white, text-white/80, border-white, Spinner usw. ab) */
+  /* White becomes dark text color in Light Mode (also covers
+     hover:text-white, text-white/80, border-white, spinner etc.) */
   --color-white: 15 23 42;
 }
 
-/* Ausnahme: Eigener Bild-Hintergrund (backgroundType "image") soll auch im
-   Light-Mode sichtbar sein. Die hellere Light-Grundfarbe (`--background-color`)
-   würde sonst den darunterliegenden Bild-Layer (body::before) abdecken →
-   hier auf transparent stellen. Höhere Spezifität schlägt die Light-Defaults. */
+/* Exception: a custom image background (backgroundType "image") should also be
+   visible in Light Mode. The lighter Light background color (`--background-color`)
+   would otherwise cover the image layer underneath (body::before) →
+   set to transparent here. Higher specificity beats the Light defaults. */
 :root[data-theme="light"][data-bg-type="image"] {
   --background-color: transparent !important;
 }
 
-/* Ausnahme 1: Buttons auf Farbverlauf behalten weiße Schrift */
+/* Exception 1: Buttons on a gradient keep white text */
 [data-theme="light"] .btn-primary {
   color: #ffffff;
 }
 
-/* Ausnahme 2: Weiße Schrift auf vollfarbigen Flächen bleibt weiß */
+/* Exception 2: White text on solid-color surfaces stays white */
 [data-theme="light"] :is(
   .bg-primary-500, .bg-primary-600,
   .bg-green-500, .bg-red-500, .bg-amber-500, .bg-yellow-500,
@@ -102,14 +102,14 @@
   --color-white: 255 255 255;
 }
 
-/* Status-Farben im Light-Mode einen Tick dunkler → bessere Kontraste */
+/* Status colors one tick darker in Light Mode → better contrast */
 [data-theme="light"] .text-red-400 { color: #dc2626; }
 [data-theme="light"] .text-green-400 { color: #16a34a; }
 [data-theme="light"] .text-yellow-400 { color: #ca8a04; }
 [data-theme="light"] .text-amber-400 { color: #d97706; }
 [data-theme="light"] .text-blue-400 { color: #2563eb; }
 
-/* Glass-Karten im Light-Mode etwas dichter, damit sie nicht in der Fläche verschwinden */
+/* Glass cards slightly more opaque in Light Mode so they don't vanish into the surface */
 [data-theme="light"] .glass-card {
   background-color: rgb(255 255 255 / 0.65);
   border-color: rgb(226 232 240 / 0.9);
@@ -126,18 +126,18 @@
     background-color: var(--background-color, #0a0a0f);
     background-image: var(--background-image, none);
     background-attachment: var(--background-attachment, scroll);
-    /* `cover` statt `100% 100%`: verhindert gestreckte/getilte Hintergründe,
-       die besonders bei langen Seiten (z.B. Galerie) eine sichtbare harte
-       Kante/Streifen in der Viewport-Mitte erzeugen. */
+    /* `cover` instead of `100% 100%`: prevents stretched/squashed backgrounds,
+       which — especially on long pages (e.g. gallery) — create a visible hard
+       edge/streak in the viewport center. */
     background-size: cover;
     font-family: var(--font-body, 'Inter', sans-serif);
   }
 
-  /* Hintergrundbild-Layer für den Typ "image" (Dim + Blur).
-     Body selbst bleibt transparent; das Bild liegt hier auf einem eigenen
-     Layer unterhalb des Inhalts, damit `filter: blur()` nur das Bild trifft.
-     `inset` wird um die Blur-Distanz erweitert, damit keine durchsichtigen
-     Blur-Ränder am Viewport sichtbar werden. */
+  /* Background-image layer for the type "image" (dim + blur).
+     The body itself stays transparent; the image sits here on its own
+     layer below the content so `filter: blur()` only hits the image.
+     `inset` is extended by the blur distance so no transparent
+     blur edges become visible at the viewport border. */
   body::before {
     content: "";
     position: fixed;

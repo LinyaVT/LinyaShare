@@ -17,13 +17,13 @@ export async function GET(
   try {
     const { shareId } = await params
 
-    // Datei aus DB holen
+    // Get the file from the DB
     const file = await getFileByShareId(shareId)
     if (!file) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Passwort-Check: Überspringen wenn der aufgerufene User der Datei-Besitzer ist
+    // Password check: skip if the calling user is the file owner
     const session = await auth()
     const isOwner = session?.user && file.userId === (session.user as any).id
 
@@ -38,19 +38,19 @@ export async function GET(
       }
     }
 
-    // Prüfen ob es ein Download ist
+    // Check whether this is a download
     const isDownload = request.nextUrl.searchParams.get("download") === "1"
 
-    // Download-Counter erhöhen wenn Download (nur bei ACTIVE/claimed files)
+    // Increment download counter if download (only for ACTIVE/claimed files)
     if (isDownload && file.status !== 'IMPORT') {
       const { prisma } = await import("@/lib/prisma")
       await prisma.file.update({
         where: { id: file.id },
         data: { downloads: { increment: 1 } },
-      }).catch(() => {}) // Fehler ignorieren (non-critical)
+      }).catch(() => {}) // Ignore errors (non-critical)
     }
 
-    // Datei auf Disk finden (zentrale Pfad-Logik, inkl. User-Ordner)
+    // Find the file on disk (central path logic, incl. user folder)
     const filePath = findFileOnDisk(file)
     if (!filePath) {
       return NextResponse.json({ error: "File not found on disk" }, { status: 404 })
@@ -59,12 +59,12 @@ export async function GET(
     const stat = fs.statSync(filePath)
     const fileSize = stat.size
 
-    // Statistik-Event loggen (fire-and-forget, nur bei Download)
+    // Log statistics event (fire-and-forget, only on download)
     if (isDownload && file.status !== 'IMPORT') {
       logStatEvent("DOWNLOAD", { fileId: file.id, userId: file.userId || undefined, size: fileSize })
     }
 
-    // Content-Disposition: Download → attachment, sonst nur inline wenn sicherer Typ
+    // Content-Disposition: download → attachment, otherwise inline only for safe types
     const disposition = getDeliveryDisposition(
       file.type || "application/octet-stream",
       file.originalName || file.name,
@@ -72,7 +72,7 @@ export async function GET(
     )
     const contentDisposition = buildContentDisposition(file.originalName || file.name, disposition)
 
-    // Range-Request Support für echtes Video/Audio Streaming
+    // Range request support for real video/audio streaming
     const rangeHeader = request.headers.get("range")
     let start = 0
     let end = fileSize - 1
@@ -89,10 +89,10 @@ export async function GET(
 
     const contentLength = end - start + 1
 
-    // Streaming mit 64KB Chunks und automatischer Backpressure.
-    // nodeStreamToWeb() statt Readable.toWeb() vermeidet den
-    // "Controller is already closed"-uncaughtException-Bug (nodejs/node#64529)
-    // bei abgebrochenen Verbindungen (HEAD, Video-Seek, Client-Disconnect).
+    // Streaming with 64KB chunks and automatic backpressure.
+    // nodeStreamToWeb() instead of Readable.toWeb() avoids the
+    // "Controller is already closed" uncaughtException bug (nodejs/node#64529)
+    // on aborted connections (HEAD, video seek, client disconnect).
     const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 }) // 64KB chunks
     const readableStream = nodeStreamToWeb(nodeStream)
 

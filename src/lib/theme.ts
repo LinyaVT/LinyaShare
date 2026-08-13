@@ -1,10 +1,10 @@
 // ──────────────────────────────────────────────────────────
 // THEME ENGINE
 // ──────────────────────────────────────────────────────────
-// Das Theme wird als `theme.*` Settings in der Datenbank gespeichert,
-// von `resolveTheme()` zu einer valide Struktur aufgelöst und von
-// `computeCssVars()` in CSS-Variablen übersetzt.
-// Die Datei ist rein (keine Node/Next-Imports) → Server & Client nutzbar.
+// The theme is stored as `theme.*` settings in the database,
+// resolved by `resolveTheme()` into a valid structure and translated
+// by `computeCssVars()` into CSS variables.
+// This file is pure (no Node/Next imports) → usable on server & client.
 
 // ──────────────────────────────────────────────────────────
 // DEFAULT THEME
@@ -94,17 +94,17 @@ function clampNumber(v: string | undefined, min: number, max: number, fallback: 
 // ──────────────────────────────────────────────────────────
 // FONT MAP (Self-Hosted, via /api/fonts/<key>/style.css)
 // ──────────────────────────────────────────────────────────
-// Die Schriftdateien werden lokal unter data/uploads/global/fonts
-// abgelegt und vom Server ausgeliefert. Beim ersten Aufruf lädt der
-// Server die woff2-Dateien einmalig von Google Fonts herunter und
-// cached sie dort – Besucher greifen danach nie auf Google zu.
-// Custom-Fonts (Admin-Upload) werden über `theme.customFonts` ergänzt.
+// The font files are stored locally under data/uploads/global/fonts
+// and served by the server. On the first call the server downloads the
+// woff2 files once from Google Fonts and caches them there - visitors
+// never reach Google afterwards.
+// Custom fonts (admin upload) are added via `theme.customFonts`.
 
 export interface FontEntry {
   label: string
   family: string
   url: string
-  /** Google-Fonts-CSS-URL – wird nur beim einmaligen Erst-Download genutzt. */
+  /** Google Fonts CSS URL - only used for the one-time initial download. */
   googleUrl?: string
 }
 
@@ -305,7 +305,7 @@ const isSafeCustomFont = (e: unknown): e is CustomFontEntry => {
   )
 }
 
-/** Parsiert das `theme.customFonts`-Setting (JSON-Array) → list of entries. */
+/** Parses the `theme.customFonts` setting (JSON array) → list of entries. */
 export function parseCustomFonts(json: string | undefined | null): CustomFontEntry[] {
   if (!json) return []
   try {
@@ -316,7 +316,7 @@ export function parseCustomFonts(json: string | undefined | null): CustomFontEnt
   }
 }
 
-/** Wandelt Custom-Font-Entries in eine FontMap (Body/Heading-Auswahl). */
+/** Converts custom font entries into a FontMap (Body/Heading selection). */
 export function customFontsToMap(entries: CustomFontEntry[]): FontMap {
   const map: FontMap = {}
   for (const e of entries) {
@@ -325,7 +325,7 @@ export function customFontsToMap(entries: CustomFontEntry[]): FontMap {
   return map
 }
 
-/** Merged zwei FontMaps (base wird von extra überlagert). */
+/** Merges two FontMaps (base is overlaid by extra). */
 export function mergeFontMaps(base: FontMap, extra: FontMap): FontMap {
   return { ...base, ...extra }
 }
@@ -472,10 +472,10 @@ export function computeCssVars(theme: ThemeConfig, fontMap: FontMap = FONT_MAP):
     bgAttachment = "fixed"
     bgColor = theme.backgroundFrom
   } else if (theme.backgroundType === "image") {
-    // Das Bild wird auf einem eigenen Layer (`body::before`) gerendert, damit
-    // Dim (dunkler Overlay) und Blur (`filter`) das Bild abdunkeln/weichzeichnen,
-    // ohne den Seiteninhalt mit zu beeinflussen. `body` selbst bleibt dabei
-    // transparent, sonst würde die undurchsichtige Body-Farbe den Layer abdecken.
+    // The image is rendered on its own layer (`body::before`) so that
+    // dim (dark overlay) and blur (`filter`) darken/soften the image
+    // without affecting the page content. `body` itself stays transparent,
+    // otherwise the opaque body color would cover the layer.
     const dim = Math.min(100, Math.max(0, theme.backgroundImageDim)) / 100
     const blur = Math.min(50, Math.max(0, theme.backgroundImageBlur))
     const dimLayer = dim > 0 ? `linear-gradient(rgba(0,0,0,${dim.toFixed(3)}), rgba(0,0,0,${dim.toFixed(3)})), ` : ""

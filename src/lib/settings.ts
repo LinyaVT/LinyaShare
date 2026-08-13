@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma"
 
 export const DEFAULT_SITE_NAME = "LinyaShare"
 
-// Liest den in den Admin-Settings hinterlegten Service-Namen.
-// `cache()` dedupliziert parallele Aufrufe innerhalb eines Requests.
+// Reads the service name stored in the admin settings.
+// `cache()` deduplicates parallel calls within a single request.
 export const getSiteName = cache(async (): Promise<string> => {
   try {
     const row = await prisma.setting.findUnique({

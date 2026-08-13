@@ -1,10 +1,10 @@
 /**
- * Media-Embed Generator für Rich Embeds (Discord, Twitter, Facebook, etc.)
+ * Media embed generator for rich embeds (Discord, Twitter, Facebook, etc.)
  */
 
 import { VIDEO_EXTENSIONS, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS } from './constants'
 
-// Re-export für abwärtskompatibilität
+// Re-export for backward compatibility
 export { VIDEO_EXTENSIONS, IMAGE_EXTENSIONS, AUDIO_EXTENSIONS }
 
 export function isVideoType(mimeType: string, fileName: string): boolean {
@@ -32,8 +32,8 @@ export function getMediaCategory(mimeType: string, fileName: string): "video" | 
 
 export function generateEmbedUrl(shareId: string, filename?: string, baseUrl?: string): string {
   const origin = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-  // Dateiname anhängen, damit die URL mit der Dateiendung endet
-  // (Discord & Co. erkennen Media-Dateien nur an solchen "direkten" Links).
+  // Append the file name so the URL ends with the file extension
+  // (Discord & co. only recognize media files by such "direct" links).
   const name = filename ? `/${encodeURIComponent(filename)}` : ""
   return `${origin}/api/files/embed/${shareId}${name}`
 }
@@ -82,7 +82,7 @@ export function generateEmbedMeta(
 }
 
 /**
- * Generiert Open Graph Meta Tags als JSON-LD oder HTML Meta Tags
+ * Generates Open Graph meta tags as JSON-LD or HTML meta tags
  */
 export function generateOpenGraphTags(meta: EmbedMeta): Record<string, string> {
   const tags: Record<string, string> = {

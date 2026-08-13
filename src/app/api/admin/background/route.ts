@@ -8,11 +8,11 @@ import { detectFileType } from "@/lib/file-security";
 
 // ──────────────────────────────────────────────────────────
 // ADMIN BACKGROUND IMAGE
-// POST/DELETE nur für Admins, GET öffentlich (wird als CSS-Hintergrund
-// auf der öffentlichen Seite via `url('/api/admin/background')` geladen).
+// POST/DELETE only for admins, GET public (loaded as CSS background
+// on the public page via `url('/api/admin/background')`).
 //
-// Ablage: data/uploads/global/background/background.<ext>
-// Es existiert immer nur genau eine Datei (alte wird beim Upload gelöscht).
+// Storage: data/uploads/global/background/background.<ext>
+// Only one file always exists (the old one is deleted on upload).
 // ──────────────────────────────────────────────────────────
 
 const MIME_TO_EXT: Record<string, { ext: string; mime: string }> = {
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Empty file" }, { status: 400 });
     }
 
-    // Magic-Bytes-Verifikation: Nur echte Bildformate zulassen (SVG etc. → abgelehnt)
+    // Magic-bytes verification: only allow real image formats (SVG etc. → rejected)
     const detected = detectFileType(buffer);
     const target = MIME_TO_EXT[detected.mimeType];
     if (!target) {

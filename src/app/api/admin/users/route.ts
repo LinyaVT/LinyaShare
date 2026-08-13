@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Update fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Update failed" }, { status: 500 })
   }
 }
 
@@ -61,7 +61,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await request.json()
     
-    // Delete files from disk (zentrale Pfad-Logik, inkl. User-Ordner)
+    // Delete files from disk (central path logic, incl. user folder)
     const files = await prisma.file.findMany({ where: { userId } })
 
     for (const file of files) {
@@ -73,7 +73,7 @@ export async function DELETE(request: NextRequest) {
     await prisma.user.delete({ where: { id: userId } })
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Löschen fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Deletion failed" }, { status: 500 })
   }
 }
 
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
-      return NextResponse.json({ error: "E-Mail existiert bereits" }, { status: 400 })
+      return NextResponse.json({ error: "Email already exists" }, { status: 400 })
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
@@ -102,11 +102,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Statistik-Event loggen (fire-and-forget)
+    // Log statistics event (fire-and-forget)
     logStatEvent("REGISTER", { userId: user.id })
 
     return NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email } })
   } catch (error) {
-    return NextResponse.json({ error: "Erstellung fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Creation failed" }, { status: 500 })
   }
 }

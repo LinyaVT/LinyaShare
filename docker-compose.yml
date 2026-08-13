@@ -12,9 +12,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # Build-Arg muss zum Laufzeit-DATABASE_PROVIDER passen
-      # (er bestimmt, welche Prisma-Engine in das Image gebaut wird).
-      #   sqlite (Standard) | mysql | postgres
+      # Build-arg must match the runtime DATABASE_PROVIDER
+      # (it determines which Prisma engine is baked into the image).
+      #   sqlite (default) | mysql | postgres
       args:
         DATABASE_PROVIDER: ${DATABASE_PROVIDER:-sqlite}
     container_name: linyashare
@@ -23,10 +23,10 @@ services:
       - "3000:3000"
     environment:
       # ── Database ──
-      # DATABASE_PROVIDER: sqlite (Standard) | mysql | postgres
+      # DATABASE_PROVIDER: sqlite (default) | mysql | postgres
       - DATABASE_PROVIDER=${DATABASE_PROVIDER:-sqlite}
-      # Leer lassen für die eingebaute SQLite-Datenbank.
-      # Externe Beispiele:
+      # Leave empty for the built-in SQLite database.
+      # External examples:
       #   MySQL:       mysql://user:password@dbhost:3306/linyashare
       #   PostgreSQL:  postgresql://user:password@dbhost:5432/linyashare
       - DATABASE_URL=${DATABASE_URL:-}

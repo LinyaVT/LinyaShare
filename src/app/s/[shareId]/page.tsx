@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const hasPassword = !!file.password
     const uploader = file.user?.name || "Unknown"
     
-    // Bestimme Dateityp-Label über die zentrale Klassifikation
+    // Determine the file type label via the central classification
     const typeLabel = TYPE_LABELS[getFileTypeCategory(fileType || "", fileName)] || "File"
 
     const title = `${fileName} - ${siteName}`
@@ -85,16 +85,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     }
 
-    // Zusätzliche Meta-Tags für Bild/Video/Audio
+    // Additional meta tags for image/video/audio
     if (!hasPassword) {
       const isImage = fileType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|ico|svg)$/i.test(fileName)
       const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|avi|mov|mkv|wmv)$/i.test(fileName)
       const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(fileName)
 
-      // Direkter Media-Link (endet auf die Dateiendung) – so erkennen Discord & Co.
-      // die Datei als Bild/Video/Audio und zeigen Vorschau an. Bilder werden so
-      // wie Videos behandelt: die URL endet auf die echte Dateiendung (.png etc.)
-      // und liefert das tatsächlich hochgeladene Bild aus.
+      // Direct media link (ends with the file extension) – this way Discord & co.
+      // recognize the file as image/video/audio and show a preview. Images are
+      // treated like videos: the URL ends with the real file extension (.png etc.)
+      // and serves the actually uploaded image.
       const mediaUrl = `${baseUrl}/api/files/embed/${shareId}/${encodeURIComponent(fileName)}`
 
       if (isImage) {

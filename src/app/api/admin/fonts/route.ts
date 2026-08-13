@@ -14,13 +14,13 @@ import path from "path";
 
 // ──────────────────────────────────────────────────────────
 // ADMIN CUSTOM FONTS
-// Ablage: data/uploads/global/fonts/custom/<key>/font.<ext> + style.css
-// Metadaten werden als JSON im Setting `theme.customFonts` gespeichert.
-// POST/DELETE nur für Admins, GET (Admin) listet die Uploads.
+// Storage: data/uploads/global/fonts/custom/<key>/font.<ext> + style.css
+// Metadata is stored as JSON in the `theme.customFonts` setting.
+// POST/DELETE only for admins, GET (admin) lists the uploads.
 // ──────────────────────────────────────────────────────────
 
 const KEY_RE = /^custom-[a-z0-9-]+$/
-const MAX_FONT_SIZE = 20 * 1024 * 1024 // 20MB Sanity-Grenze
+const MAX_FONT_SIZE = 20 * 1024 * 1024 // 20MB sanity limit
 
 const customEntryDir = (key: string) => path.join(CUSTOM_FONTS_DIR, key)
 
@@ -40,7 +40,7 @@ async function writeCustomFonts(entries: CustomFontEntry[]): Promise<void> {
   })
 }
 
-// Erlaubt nur CSS-sichere Zeichen für family/label (keine Quotes, kein CSS-Breakout).
+// Only allows CSS-safe characters for family/label (no quotes, no CSS breakout).
 function sanitizeName(raw: string): string {
   return raw
     .replace(/[^a-zA-Z0-9 \u00C0-\u024F_-]/g, "")
@@ -71,7 +71,7 @@ export async function GET() {
         const s = await stat(path.join(customEntryDir(e.key), `font${e.ext}`));
         size = s.size;
       } catch {
-        // Datei fehlt → size bleibt 0
+        // File missing → size stays 0
       }
       return { ...e, size };
     })
@@ -90,28 +90,28 @@ export async function POST(request: NextRequest) {
     const rawName = String(form.get("name") || "").trim();
     const file = form.get("file");
     if (!rawName) {
-      return NextResponse.json({ error: "Bitte einen Schriften-Namen angeben" }, { status: 400 });
+      return NextResponse.json({ error: "Please provide a font name" }, { status: 400 });
     }
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Keine Datei erhalten" }, { status: 400 });
+      return NextResponse.json({ error: "No file received" }, { status: 400 });
     }
     if (file.size === 0) {
-      return NextResponse.json({ error: "Leere Datei" }, { status: 400 });
+      return NextResponse.json({ error: "Empty file" }, { status: 400 });
     }
     if (file.size > MAX_FONT_SIZE) {
-      return NextResponse.json({ error: "Datei zu groß (max. 20MB)" }, { status: 400 });
+      return NextResponse.json({ error: "File too large (max. 20MB)" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const detected = detectFontType(buffer);
     if (!detected) {
       return NextResponse.json(
-        { error: "Keine gültige Schriftdatei (nur TTF, OTF, WOFF, WOFF2 oder TTC)" },
+        { error: "Not a valid font file (only TTF, OTF, WOFF, WOFF2 or TTC)" },
         { status: 400 }
       );
     }
 
-    // Eindeutigen Key erzeugen (collision-sicher)
+    // Generate a unique key (collision-safe)
     let key = "";
     for (let attempt = 0; attempt < 10; attempt++) {
       const candidate = `custom-${slugify(rawName)}-${randomBytes(3).toString("hex")}`;
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!key) {
-      return NextResponse.json({ error: "Key-Erzeugung fehlgeschlagen" }, { status: 500 });
+      return NextResponse.json({ error: "Key generation failed" }, { status: 500 });
     }
 
     const family = sanitizeName(rawName);
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, font: entry });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Upload fehlgeschlagen" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
   }
 }
 
@@ -161,13 +161,13 @@ export async function DELETE(request: NextRequest) {
   try {
     const { key } = await request.json();
     if (!key || !KEY_RE.test(String(key))) {
-      return NextResponse.json({ error: "Ungültiger Font-Key" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid font key" }, { status: 400 });
     }
 
     const entries = await readCustomFonts();
     const next = entries.filter((e) => e.key !== key);
     if (next.length === entries.length) {
-      return NextResponse.json({ error: "Font nicht gefunden" }, { status: 404 });
+      return NextResponse.json({ error: "Font not found" }, { status: 404 });
     }
     await writeCustomFonts(next);
 
@@ -178,6 +178,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Löschen fehlgeschlagen" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Deletion failed" }, { status: 500 });
   }
 }

@@ -1,14 +1,14 @@
 import { Readable } from "stream"
 
 /**
- * Konvertiert einen Node.js Readable in einen Web ReadableStream, ohne den
- * `Readable.toWeb()`-Bug (nodejs/node#64529): "Invalid state: Controller is
- * already closed" als uncaughtException, wenn der Stream während Backpressure
- * abgebrochen wird (HEAD-Anfragen, Client-Disconnect, Video-Seek-Probe, ...).
+ * Converts a Node.js Readable into a Web ReadableStream without the
+ * `Readable.toWeb()` bug (nodejs/node#64529): "Invalid state: Controller is
+ * already closed" as uncaughtException when the stream is aborted during
+ * backpressure (HEAD requests, client disconnect, video seek probe, ...).
  *
- * Pull-basiertes `for await` + abgesicherte enqueue/close/error-Aufrufe sorgen
- * dafür, dass ein Abbruch den Quell-Stream leise beendet, statt eine
- * uncaughtException zu werfen.
+ * Pull-based `for await` + guarded enqueue/close/error calls ensure
+ * that an abort quietly ends the source stream instead of throwing an
+ * uncaughtException.
  */
 export function nodeStreamToWeb(nodeStream: Readable): ReadableStream<Uint8Array> {
   return new ReadableStream<Uint8Array>({
@@ -18,14 +18,14 @@ export function nodeStreamToWeb(nodeStream: Readable): ReadableStream<Uint8Array
           try {
             controller.enqueue(chunk)
           } catch {
-            // Controller bereits geschlossen/abgebrochen → Quelle sauber beenden
+            // Controller already closed/aborted → end the source cleanly
             nodeStream.destroy()
             break
           }
         }
-        try { controller.close() } catch { /* bereits geschlossen */ }
+        try { controller.close() } catch { /* already closed */ }
       } catch (err) {
-        try { controller.error(err) } catch { /* bereits geschlossen */ }
+        try { controller.error(err) } catch { /* already closed */ }
       }
     },
     cancel() {

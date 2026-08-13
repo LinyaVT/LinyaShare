@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Datei auf Disk finden (zentrale Pfad-Logik, inkl. User-Ordner)
+    // Find the file on disk (central path logic, incl. user folder)
     const filePath = findFileOnDisk(file)
     if (!filePath) {
       return NextResponse.json({ error: "File not found on disk" }, { status: 404 })
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const stat = fs.statSync(filePath)
     
-    // Increment download count (nur bei ACTIVE/claimed files)
+    // Increment download count (only for ACTIVE/claimed files)
     if (file.status !== 'IMPORT') {
       const { prisma } = await import("@/lib/prisma")
       await prisma.file.update({
@@ -44,16 +44,16 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Statistik-Event loggen (fire-and-forget)
+    // Log statistics event (fire-and-forget)
     logStatEvent("DOWNLOAD", { fileId: file.id, userId: file.userId || undefined, size: stat.size })
 
-    // Downloads sind immer attachment
+    // Downloads are always attachment
     const contentDisposition = buildContentDisposition(file.originalName, "attachment")
 
     // Stream the file
-    // nodeStreamToWeb() statt Readable.toWeb()/manuellem ReadableStream:
-    // vermeidet den "Controller is already closed"-uncaughtException-Bug
-    // (nodejs/node#64529) bei abgebrochenen Verbindungen.
+    // nodeStreamToWeb() instead of Readable.toWeb()/manual ReadableStream:
+    // avoids the "Controller is already closed" uncaughtException bug
+    // (nodejs/node#64529) when connections are aborted.
     const nodeStream = fs.createReadStream(filePath)
     const readableStream = nodeStreamToWeb(nodeStream)
 

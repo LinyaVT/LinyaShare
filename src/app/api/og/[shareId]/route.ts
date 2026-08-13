@@ -7,8 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ shareId: string }> }
 ) {
   try {
-    // .png-Suffix abstreifen (Discord & Co. zeigen OG-Bilder nur mit Dateiendung).
-    // URLs ohne Endung bleiben kompatibel.
+    // Strip the .png suffix (Discord & co. only show OG images with a file extension).
+    // URLs without an extension remain compatible.
     const { shareId: rawId } = await params
     const shareId = rawId.replace(/\.png$/i, "")
 
@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Theme-Akzentfarben laden (bereits 30% abgedunkelt → bessere Lesbarkeit)
+    // Load theme accent colors (already 30% darkened → better readability)
     const { accentFrom, accentTo, siteName } = await loadOgAccents()
 
     const fileName = file.originalName || file.name
@@ -25,17 +25,17 @@ export async function GET(
     const hasPassword = !!file.password
     const uploader = file.user?.name || "Unknown"
 
-    // OG Image Größe: 1200x630 (Standard für Open Graph)
+    // OG image size: 1200x630 (standard for Open Graph)
     const width = 1200
     const height = 630
 
     let svg = ""
     
     if (hasPassword) {
-      // Passwort-geschützt: Schloss-Icon
+      // Password-protected: lock icon
       svg = generateLockedSvg(width, height, fileName, uploader, siteName, accentFrom, accentTo)
     } else {
-      // Dateityp-basiertes SVG
+      // File-type-based SVG
       const isImage = fileType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(fileName)
       const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|avi|mov|mkv|wmv)$/i.test(fileName)
       const isAudio = fileType.startsWith("audio/") || /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(fileName)
@@ -51,8 +51,8 @@ export async function GET(
       }
     }
 
-    // SVG → PNG rasterisieren: Discord, Facebook & Co. rendern kein SVG
-    // in Embeds, sondern nur jpg/png/gif/webp.
+    // Rasterize SVG → PNG: Discord, Facebook & co. do not render SVG
+    // in embeds, only jpg/png/gif/webp.
     const pngBuffer = await renderOgPng(svg)
 
     return new NextResponse(pngBuffer, {
@@ -85,7 +85,7 @@ function generateLockedSvg(width: number, height: number, fileName: string, uplo
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
   ${ogOverlayRect(width, height)}
   
-  <!-- Schloss Icon -->
+  <!-- Lock icon -->
   <g transform="translate(${width/2}, ${height/2 - 50})" filter="url(#shadow)">
     <circle cx="0" cy="0" r="80" fill="#3b82f6" opacity="0.15"/>
     <circle cx="0" cy="0" r="60" fill="#3b82f6" opacity="0.25"/>
@@ -97,14 +97,14 @@ function generateLockedSvg(width: number, height: number, fileName: string, uplo
     <rect x="-2" y="20" width="4" height="12" fill="#60a5fa"/>
   </g>
   
-  <!-- Dateiname -->
+  <!-- File name -->
   <text x="${width/2}" y="${height/2 + 60}" 
         font-family="Arial, sans-serif" font-size="32" font-weight="bold" 
         fill="#ffffff" text-anchor="middle">
     ${truncatedName}
   </text>
   
-  <!-- Passwort-Hinweis -->
+  <!-- Password hint -->
   <text x="${width/2}" y="${height/2 + 110}" 
         font-family="Arial, sans-serif" font-size="20" 
         fill="#94a3b8" text-anchor="middle">
@@ -134,7 +134,7 @@ function generateImageSvg(width: number, height: number, fileName: string, uploa
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
   ${ogOverlayRect(width, height)}
   
-  <!-- Bild Icon -->
+  <!-- Image icon -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
     <rect x="-70" y="-50" width="140" height="100" rx="10" 
           fill="#3b82f6" opacity="0.3" stroke="#60a5fa" stroke-width="3"/>
@@ -143,14 +143,14 @@ function generateImageSvg(width: number, height: number, fileName: string, uploa
           fill="#93c5fd" opacity="0.4"/>
   </g>
   
-  <!-- Dateiname -->
+  <!-- File name -->
   <text x="${width/2}" y="${height/2 + 50}" 
         font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
         fill="#ffffff" text-anchor="middle">
     ${truncatedName}
   </text>
   
-  <!-- Typ -->
+  <!-- Type -->
   <text x="${width/2}" y="${height/2 + 95}" 
         font-family="Arial, sans-serif" font-size="22" 
         fill="#93c5fd" text-anchor="middle">
@@ -180,21 +180,21 @@ function generateVideoSvg(width: number, height: number, fileName: string, uploa
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
   ${ogOverlayRect(width, height)}
   
-  <!-- Video Icon -->
+  <!-- Video icon -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
     <rect x="-70" y="-50" width="140" height="100" rx="10" 
           fill="#a855f7" opacity="0.3" stroke="#c084fc" stroke-width="3"/>
     <path d="M-30,-30 L30,0 L-30,30 Z" fill="#c084fc"/>
   </g>
   
-  <!-- Dateiname -->
+  <!-- File name -->
   <text x="${width/2}" y="${height/2 + 50}" 
         font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
         fill="#ffffff" text-anchor="middle">
     ${truncatedName}
   </text>
   
-  <!-- Typ -->
+  <!-- Type -->
   <text x="${width/2}" y="${height/2 + 95}" 
         font-family="Arial, sans-serif" font-size="22" 
         fill="#c084fc" text-anchor="middle">
@@ -224,15 +224,15 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
   ${ogOverlayRect(width, height)}
   
-  <!-- Audio Icon mit Wellenform -->
+  <!-- Audio icon with waveform -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
-    <!-- Kopfhörer -->
+    <!-- Headphones -->
     <path d="M-20,-20 Q-20,-50 0,-50 Q20,-50 20,-20" 
           fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round"/>
     <rect x="-25" y="-20" width="10" height="25" rx="3" fill="#34d399"/>
     <rect x="15" y="-20" width="10" height="25" rx="3" fill="#34d399"/>
     
-    <!-- Wellenform -->
+    <!-- Waveform -->
     <rect x="-50" y="25" width="8" height="20" fill="#34d399" opacity="0.7"/>
     <rect x="-35" y="15" width="8" height="40" fill="#34d399" opacity="0.8"/>
     <rect x="-20" y="5" width="8" height="60" fill="#34d399"/>
@@ -241,14 +241,14 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
     <rect x="25" y="25" width="8" height="20" fill="#34d399" opacity="0.7"/>
   </g>
   
-  <!-- Dateiname -->
+  <!-- File name -->
   <text x="${width/2}" y="${height/2 + 50}" 
         font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
         fill="#ffffff" text-anchor="middle">
     ${truncatedName}
   </text>
   
-  <!-- Typ -->
+  <!-- Type -->
   <text x="${width/2}" y="${height/2 + 95}" 
         font-family="Arial, sans-serif" font-size="22" 
         fill="#34d399" text-anchor="middle">
@@ -267,14 +267,14 @@ function generateAudioSvg(width: number, height: number, fileName: string, uploa
 function generateFileSvg(width: number, height: number, fileName: string, fileType: string, uploader: string, siteName: string, accentFrom: string, accentTo: string) {
   const truncatedName = fileName.length > 35 ? fileName.substring(0, 35) + "..." : fileName
   
-  // Bestimme Farbe basierend auf Dateityp
-  let primaryColor = "#64748b" // Default grau
+  // Determine the color based on the file type
+  let primaryColor = "#64748b" // Default gray
   if (fileType.includes("archive") || /\.(zip|rar|tar|gz|7z)$/i.test(fileName)) {
-    primaryColor = "#fbbf24" // Gelb für Archive
+    primaryColor = "#fbbf24" // Yellow for archives
   } else if (fileType.includes("text") || /\.(txt|md|doc|pdf)$/i.test(fileName)) {
-    primaryColor = "#3b82f6" // Blau für Dokumente
+    primaryColor = "#3b82f6" // Blue for documents
   } else if (fileType.includes("spreadsheet") || /\.(xls|csv)$/i.test(fileName)) {
-    primaryColor = "#22c55e" // Grün für Tabellen
+    primaryColor = "#22c55e" // Green for spreadsheets
   }
   
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -288,7 +288,7 @@ function generateFileSvg(width: number, height: number, fileName: string, fileTy
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
   ${ogOverlayRect(width, height)}
   
-  <!-- Datei Icon -->
+  <!-- File icon -->
   <g transform="translate(${width/2}, ${height/2 - 60})">
     <rect x="-50" y="-60" width="100" height="120" rx="8" 
           fill="${primaryColor}" opacity="0.2" stroke="${primaryColor}" stroke-width="3"/>
@@ -297,14 +297,14 @@ function generateFileSvg(width: number, height: number, fileName: string, fileTy
     <path d="M20,-20 L20,0 L50,0" fill="none" stroke="${primaryColor}" stroke-width="3" opacity="0.6"/>
   </g>
   
-  <!-- Dateiname -->
+  <!-- File name -->
   <text x="${width/2}" y="${height/2 + 50}" 
         font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
         fill="#ffffff" text-anchor="middle">
     ${truncatedName}
   </text>
   
-  <!-- Typ -->
+  <!-- Type -->
   <text x="${width/2}" y="${height/2 + 95}" 
         font-family="Arial, sans-serif" font-size="22" 
         fill="#94a3b8" text-anchor="middle">

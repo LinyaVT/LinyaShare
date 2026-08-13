@@ -19,7 +19,7 @@ export const CUSTOM_FONTS_DIR = path.join(FONTS_DIR, 'custom');
 
 export const CHUNK_SIZE = 512 * 1024; // 512KB – stays below nginx default (1m) so no proxy config is needed
 export const DEFAULT_STORAGE_LIMIT = 524288000; // 500MB in bytes
-export const MAX_EMBED_SIZE = 50 * 1024 * 1024; // 50MB – größere Media-Dateien bekommen keinen Embed-Link
+export const MAX_EMBED_SIZE = 50 * 1024 * 1024; // 50MB – larger media files get no embed link
 
 // Video Extensions
 export const VIDEO_EXTENSIONS = /\.(mp4|webm|avi|mov|mkv|wmv|flv|m4v|mpg|mpeg|3gp|3g2|m2ts|mts|vob|divx|rm|rmvb|ogv|ogm|f4v|f4p)$/i;
@@ -36,13 +36,13 @@ export const ARCHIVE_EXTENSIONS = /\.(zip|rar|tar|gz|tgz|tbz|tbz2|txz|7z|bz2|xz|
 // Code / Script Extensions
 export const CODE_EXTENSIONS = /\.(py|pyw|ipynb|js|mjs|cjs|jsx|ts|tsx|java|c|h|cpp|cxx|hpp|cc|cs|go|rs|rb|php|kt|kts|swift|sh|bash|zsh|sql|r|lua|pl|pm|dart|scala|html|css|svelte|vue|m|mm|vb|f|f77|f90|f95|for|asm|s|hs|ml|clj|cljs|erl|ex|exs|nim|sol|proto|graphql|gql|tf|gradle|tcl|awk|ino|v|sv|jl|zig|groovy|ps1|psd1|psm1|fs|fsx|pas|pp|ahk)$/i;
 
-// Executable / Program Extensions (inkl. Disk-Images & VMs)
+// Executable / Program Extensions (incl. disk images & VMs)
 export const EXECUTABLE_EXTENSIONS = /\.(jar|war|ear|exe|msi|msix|apk|ipa|appx|deb|rpm|dmg|pkg|run|bat|cmd|bin|com|iso|img|vhd|vmdk|vhdx|qcow2|ova|ovf|dll|sys|drv|lib|so|unitypackage|scr|cpl)$/i;
 
 // 3D Model Extensions
 export const MODEL_EXTENSIONS = /\.(stl|obj|fbx|step|stp|iges|igs|dwg|dxf|blend|glb|gltf|3ds|dae|ply|3mf|amf|c4d|max|ma|mb|skp|sldprt|sldasm|sat|x_t|x_b|ifc|ipt|iam|rvt|usdz)$/i;
 
-// Data / Config Extensions (inkl. Geo- & Metadaten)
+// Data / Config Extensions (incl. geo- & metadata)
 export const DATA_EXTENSIONS = /\.(json|jsonl|ndjson|xml|yaml|yml|toml|ini|cfg|conf|properties|opml|ics|ical|vcf|vcard|plist|reg|har|torrent|geojson|kml|gpx)$/i;
 
 // Database Extensions

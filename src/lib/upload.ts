@@ -114,13 +114,13 @@ export async function finalizeUserUpload(
     throw new Error(`Upload incomplete: temporary file not found. Please try again.`);
   }
 
-  // User-Ordner anlegen (0755) und Datei dorthin verschieben
+  // Create the user folder (0755) and move the file there
   const userDir = await ensureUserUploadDir(userId);
   const finalPath = path.join(userDir, finalName);
 
   await rename(tempPath, finalPath);
 
-  // Datei-Rechte: 0644 (keine Execute-Bits → kein Shellcode ausführbar)
+  // File permissions: 0644 (no execute bits → no shellcode executable)
   await chmod(finalPath, 0o644).catch(() => {});
 
   const stats = await stat(finalPath);
@@ -139,11 +139,11 @@ export async function finalizeUserUpload(
     throw new Error('Storage limit exceeded');
   }
 
-  // Magic-Bytes-Verifikation: Echten Dateityp ermitteln (Client-MIME ignorieren)
+  // Magic-bytes verification: determine the real file type (ignore client MIME)
   const magicBytes = await readFileMagicBytes(finalPath);
   const detected = detectFileType(magicBytes);
 
-  // Kategorie + Executable-Flag berechnen
+  // Calculate category + executable flag
   const category = getFileCategory(detected.mimeType, originalName);
   const isExecutable = isPotentiallyExecutable(detected.mimeType, originalName);
 
@@ -151,7 +151,7 @@ export async function finalizeUserUpload(
   const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
 
   const shareId = uuidv4();
-  // SVG & aktive Inhalte nie als Media-Embed markieren (isSafeInlineType schließt SVG aus)
+  // Never mark SVG & active content as media embed (isSafeInlineType excludes SVG)
   const isMedia = isSupportedMediaType(detected.mimeType, originalName) && isSafeInlineType(detected.mimeType, originalName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
@@ -174,7 +174,7 @@ export async function finalizeUserUpload(
     },
   });
 
-  // Statistik-Event loggen (fire-and-forget)
+  // Log statistics event (fire-and-forget)
   logStatEvent("UPLOAD", { fileId: record.id, userId, size: record.size });
 
   return record;
@@ -202,21 +202,21 @@ export async function finalizeImportUpload(
 
   await rename(tempPath, finalPath);
 
-  // Datei-Rechte: 0644 (keine Execute-Bits)
+  // File permissions: 0644 (no execute bits)
   await chmod(finalPath, 0o644).catch(() => {});
 
   const stats = await stat(finalPath);
 
-  // Magic-Bytes-Verifikation: Echten Dateityp ermitteln (Client-MIME ignorieren)
+  // Magic-bytes verification: determine the real file type (ignore client MIME)
   const magicBytes = await readFileMagicBytes(finalPath);
   const detected = detectFileType(magicBytes);
 
-  // Kategorie + Executable-Flag berechnen
+  // Calculate category + executable flag
   const category = getFileCategory(detected.mimeType, originalName);
   const isExecutable = isPotentiallyExecutable(detected.mimeType, originalName);
 
   const shareId = uuidv4();
-  // SVG & aktive Inhalte nie als Media-Embed markieren (isSafeInlineType schließt SVG aus)
+  // Never mark SVG & active content as media embed (isSafeInlineType excludes SVG)
   const isMedia = isSupportedMediaType(detected.mimeType, originalName) && isSafeInlineType(detected.mimeType, originalName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, originalName) : null;
 
@@ -237,7 +237,7 @@ export async function finalizeImportUpload(
     },
   });
 
-  // Statistik-Event loggen (fire-and-forget)
+  // Log statistics event (fire-and-forget)
   logStatEvent("UPLOAD", { fileId: record.id, userId: userId || undefined, size: record.size });
 
   return record;
@@ -263,10 +263,10 @@ export async function claimFile(fileId: string, userId: string) {
     throw new Error('Storage limit exceeded');
   }
 
-  // Import-Datei in den User-Ordner verschieben
+  // Move the import file into the user folder
   await moveImportToUploads(file, userId);
 
-  // Datei-Rechte: 0644 (keine Execute-Bits)
+  // File permissions: 0644 (no execute bits)
   const userDirPath = path.join(UPLOAD_DIR, userId, file.name);
   await chmod(userDirPath, 0o644).catch(() => {});
 
@@ -311,22 +311,22 @@ export async function claimOrphanedFile(fileName: string, userId: string) {
   const ext = path.extname(safeName);
   const finalName = `${uuidv4()}${ext}`;
 
-  // Datei in den User-Ordner verschieben
+  // Move the file into the user folder
   const userDir = await ensureUserUploadDir(userId);
   const uploadPath = path.join(userDir, finalName);
 
   await rename(importPath, uploadPath);
 
-  // Datei-Rechte: 0644 (keine Execute-Bits)
+  // File permissions: 0644 (no execute bits)
   await chmod(uploadPath, 0o644).catch(() => {});
 
   const shareId = uuidv4();
 
-  // Magic-Bytes-Verifikation für orphaned Dateien
+  // Magic-bytes verification for orphaned files
   const magicBytes = await readFileMagicBytes(uploadPath);
   const detected = detectFileType(magicBytes);
 
-  // SVG & aktive Inhalte nie als Media-Embed markieren
+  // Never mark SVG & active content as media embed
   const isMedia = isSupportedMediaType(detected.mimeType, safeName) && isSafeInlineType(detected.mimeType, safeName);
   const embedUrl = isMedia ? generateEmbedUrl(shareId, safeName) : null;
   const category = getFileCategory(detected.mimeType, safeName);
@@ -361,7 +361,7 @@ export async function deleteFile(fileId: string, userId?: string) {
     throw new Error('Unauthorized');
   }
 
-  // Zentrale Lösch-Funktion (findet Datei in Uploads/Import, inkl. User-Ordner)
+  // Central delete function (finds file in uploads/import, incl. user folder)
   await removeFileFromDisk(file);
 
   await prisma.file.delete({ where: { id: fileId } });

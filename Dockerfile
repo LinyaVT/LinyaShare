@@ -59,8 +59,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Init-Wrapper (PID 1) – fängt SIGINT/SIGTERM und stdin-"^C"/0x03-Stopps ab,
-# damit `docker stop` (und Panel-Stopps) sauber mit Exit 0 enden.
+# Init wrapper (PID 1) – catches SIGINT/SIGTERM and stdin-"^C"/0x03 stops,
+# so `docker stop` (and panel stops) end cleanly with exit 0.
 COPY deploy/entry.js /app/entry.js
 
 # Create data directories

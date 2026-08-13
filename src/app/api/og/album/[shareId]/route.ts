@@ -3,9 +3,9 @@ import { getAlbumByShareId } from "@/lib/albums";
 import { loadOgAccents, renderOgPng, ogOverlayRect } from "@/lib/og";
 
 // ──────────────────────────────────────────────────────────
-// OG IMAGE FÜR ALBEN (1200x630)
-// Wird genutzt, wenn ein Album kein eigenes Bild-Cover hat.
-// Theme-Akzentfarben werden um 30% abgedunkelt + dunkler Overlay.
+// OG IMAGE FOR ALBUMS (1200x630)
+// Used when an album has no own image cover.
+// Theme accent colors are darkened 30% + dark overlay.
 // ──────────────────────────────────────────────────────────
 
 export async function GET(
@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ shareId: string }> }
 ) {
   try {
-    // .png-Suffix abstreifen (Discord & Co. zeigen OG-Bilder nur mit Dateiendung)
+    // Strip the .png suffix (Discord & co. only show OG images with a file extension)
     const { shareId: rawId } = await params;
     const shareId = rawId.replace(/\.png$/i, "");
 
@@ -73,7 +73,7 @@ function generateAlbumSvg(
   <rect width="${width}" height="${height}" fill="url(#bg)"/>
   ${ogOverlayRect(width, height)}
 
-  <!-- Gallery Icon (2x2 Bildergitter) -->
+  <!-- Gallery icon (2x2 image grid) -->
   <g transform="translate(${width / 2}, ${height / 2 - 70})" opacity="0.95">
     <rect x="-70" y="-55" width="60" height="50" rx="8" fill="#3b82f6" opacity="0.3" stroke="#60a5fa" stroke-width="3"/>
     <rect x="-5" y="-55" width="60" height="50" rx="8" fill="#3b82f6" opacity="0.3" stroke="#60a5fa" stroke-width="3"/>
@@ -93,14 +93,14 @@ function generateAlbumSvg(
       : ""
   }
 
-  <!-- Albumname -->
+  <!-- Album name -->
   <text x="${width / 2}" y="${height / 2 + 65}"
         font-family="Arial, sans-serif" font-size="36" font-weight="bold"
         fill="#ffffff" text-anchor="middle">
     ${truncatedName}
   </text>
 
-  <!-- Dateianzahl -->
+  <!-- File count -->
   <text x="${width / 2}" y="${height / 2 + 110}"
         font-family="Arial, sans-serif" font-size="22"
         fill="#93c5fd" text-anchor="middle">

@@ -29,9 +29,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "https://linyashare.sknif.de";
     const shareUrl = `${baseUrl}/a/${shareId}`;
 
-    // Cover = erstes Bild-Medium für die OG-Vorschau
-    // Falls kein Cover existiert → eigenes Album-OG-Bild (statt der Datei-Route,
-    // die bei Alben 404 liefert)
+    // Cover = first image media for the OG preview
+    // If no cover exists → use the album's own OG image (instead of the file route,
+    // which returns 404 for albums)
     const coverItem = album.items.find((i) => i.file.embedUrl && !i.file.password) || null;
     const ogImageUrl = coverItem
       ? `${baseUrl}/api/files/embed/${coverItem.file.shareId}/${encodeURIComponent(coverItem.file.originalName)}`

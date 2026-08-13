@@ -384,7 +384,7 @@ export default function AdminSettingsPage() {
       fetch("/api/admin/fonts").then((r) => r.json()).catch(() => ({ fonts: [] })),
     ])
     const raw = settingsRes.settings || {}
-    // Alte, fälschlich als MiB gespeicherte defaultMaxSize-Werte bereinigen
+    // Clean up old defaultMaxSize values that were mistakenly stored as MiB
     const normalized = { ...raw }
     if (normalized.defaultMaxSize !== undefined) {
       normalized.defaultMaxSize = normalizeMaxSize(normalized.defaultMaxSize)
@@ -397,7 +397,7 @@ export default function AdminSettingsPage() {
     setLoading(false)
   }
 
-  // ── Appearance: Live-Vorschau ──
+  // ── Appearance: Live preview ──
   const previewReadyRef = useRef(false)
 
   function applyAppearancePreview(theme: ThemeConfig, fm: FontMap) {
@@ -408,12 +408,12 @@ export default function AdminSettingsPage() {
     for (const [k, v] of Object.entries(attrs)) root.setAttribute(k, v)
   }
 
-  // Vorschau anwenden, sobald sich das Appearance-State ändert (nach dem Laden)
+  // Apply the preview once the appearance state changes (after loading)
   useEffect(() => {
     if (previewReadyRef.current) applyAppearancePreview(appearance, fontMap)
   }, [appearance, fontMap])
 
-  // Custom-Font-Faces für die Live-Vorschau nachladen
+  // Reload custom font faces for the live preview
   useEffect(() => {
     for (const k of [appearance.fontBody, appearance.fontHeading]) {
       if (!k || !k.startsWith("custom-")) continue
@@ -480,7 +480,7 @@ export default function AdminSettingsPage() {
     }
   }
 
-  // ── Background-Bild: Existenz prüfen, sobald der Image-Typ sichtbar ist ──
+  // ── Background image: check existence once the image type is visible ──
   useEffect(() => {
     if (appearance.backgroundType !== "image") return
     let cancelled = false
@@ -540,7 +540,7 @@ export default function AdminSettingsPage() {
     }
   }
 
-  // ── Custom-Fonts: Upload / Löschen ──
+  // ── Custom fonts: upload / delete ──
   async function handleFontUpload() {
     if (!fontName.trim() || !fontFile) return
     setFontUploading(true)
@@ -581,7 +581,7 @@ export default function AdminSettingsPage() {
       }
       toastSuccess(`Font "${f.label}" deleted`)
       setCustomFonts((prev) => prev.filter((x) => x.key !== f.key))
-      // Falls der gelöschte Font aktuell gewählt ist → auf Default zurückfallen
+      // If the deleted font is currently selected → fall back to the default
       setAppearance((prev) => ({
         ...prev,
         fontBody: prev.fontBody === f.key ? "Inter" : prev.fontBody,
@@ -655,8 +655,8 @@ export default function AdminSettingsPage() {
     return String(num * 1024 * 1024)
   }
 
-  // Alte, fälschlich als MiB gespeicherte Werte (z.B. "500" statt Bytes),
-  // die kleiner als 1 MiB sind, → in Bytes normalisieren.
+  // Old values that were mistakenly stored as MiB (e.g. "500" instead of bytes),
+  // smaller than 1 MiB, → normalize into bytes.
   function normalizeMaxSize(bytes: string): string {
     const num = parseInt(bytes)
     if (isNaN(num) || num <= 0) return bytes

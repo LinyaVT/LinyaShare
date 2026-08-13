@@ -2,17 +2,17 @@ import path from "path";
 import { FileTypeCategory } from "./utils";
 
 /**
- * Sicherheits-Helfer für die Datei-Auslieferung.
+ * Security helpers for file delivery.
  *
- * Kernprinzipien:
- *  - Nur sichere Medien-Typen dürfen inline (im Browser) ausgeliefert werden.
- *  - Alle riskanten Typen (SVG, HTML, JS, EXE, BAT, etc.) → immer als Download (attachment).
- *  - MIME-Sniffing wird mit X-Content-Type-Options: nosniff unterbunden.
- *  - SVG wird anhand des Contents erkannt und NIE inline ausgeliefert.
+ * Core principles:
+ *  - Only safe media types may be delivered inline (in the browser).
+ *  - All risky types (SVG, HTML, JS, EXE, BAT, etc.) are always delivered as downloads (attachment).
+ *  - MIME sniffing is suppressed with X-Content-Type-Options: nosniff.
+ *  - SVG is detected by content and NEVER delivered inline.
  */
 
 // ──────────────────────────────────────────────────────────
-// INLINE-WHITELIST
+// INLINE WHITELIST
 // ──────────────────────────────────────────────────────────
 const SAFE_INLINE_VIDEO = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
 const SAFE_INLINE_AUDIO = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/flac", "audio/aac", "audio/webm", "audio/x-wav", "audio/mp4"];
@@ -22,31 +22,31 @@ const SAFE_INLINE_DOCUMENT = [
   "application/pdf",
   "text/plain",
   "text/markdown",
-  "image/svg+xml", // wird in SAFE_INLINE_IMAGE geprüft - NICHT hier
+  "image/svg+xml", // checked in SAFE_INLINE_IMAGE - NOT here
 ];
 
-// Extension-basierte Whitelist (für Dateien mit generischem MIME-Typ)
+// Extension-based whitelist (for files with a generic MIME type)
 const SAFE_INLINE_EXTENSIONS = /\.(mp4|webm|m4v|ogv|mp3|wav|ogg|flac|aac|m4a|weba|opus|jpg|jpeg|png|gif|webp|avif|bmp|tif|tiff|apng|jfif|jpe|txt|md|markdown)$/i;
 
-// Risiko-Extensions die NIE inline ausgeliefert werden dürfen
+// Risky extensions that must NEVER be delivered inline
 const UNSAFE_EXTENSIONS = /\.(svg|svgz|html|htm|js|mjs|cjs|jsx|ts|tsx|css|xml|xsl|xslt|json|pdf|exe|bat|cmd|com|msi|msix|appx|scr|jar|war|ear|apk|ipa|deb|rpm|dmg|pkg|run|sh|bash|zsh|ps1|psd1|psm1|py|pyw|ipynb|php|asp|aspx|jsp|do|action|bin|iso|img|vhd|vmdk|vhdx|qcow2|ova|ovf|dll|sys|drv|lib|so|unitypackage|cpl)$/i;
 
 // ──────────────────────────────────────────────────────────
-// FILE-TYPE / EXECUTABLE-ERKENNUNG
+// FILE TYPE / EXECUTABLE DETECTION
 // ──────────────────────────────────────────────────────────
 const EXECUTABLE_EXTENSIONS = /\.(exe|bat|cmd|com|msi|msix|appx|scr|jar|war|ear|apk|ipa|deb|rpm|dmg|pkg|run|sh|bash|zsh|ps1|psd1|psm1|bin|iso|img|dll|sys|drv|lib|so|unitypackage|cpl|py|pyw|ipynb|php|asp|aspx|jsp)$/i;
 
 const CODE_EXTENSIONS = /\.(html|htm|js|mjs|cjs|jsx|ts|tsx|css|xml|xsl|xslt|json|yaml|yml|svelte|vue|sql|r|lua|pl|pm|dart|scala|go|rs|rb|java|c|h|cpp|hpp|cxx|hpp|cc|cs|swift|sh|bash|zsh|bat|cmd|ps1|py|pyw|ipynb|php)$/i;
 
 /**
- * Erkennt ob eine Datei (anhand MIME + Extension) ausführbaren/gefährlichen Code
- * enthalten könnte.
+ * Detects whether a file (based on MIME + extension) could contain
+ * executable/dangerous code.
  */
 export function isPotentiallyExecutable(mimeType: string, fileName: string): boolean {
   if (EXECUTABLE_EXTENSIONS.test(fileName)) return true;
   if (CODE_EXTENSIONS.test(fileName)) return true;
 
-  // MIME-Check
+  // MIME check
   const mime = mimeType.toLowerCase();
   if (mime.includes("javascript") || mime.includes("ecmascript")) return true;
   if (mime.includes("html") || mime.includes("xml")) return true;
@@ -54,40 +54,40 @@ export function isPotentiallyExecutable(mimeType: string, fileName: string): boo
   if (mime.includes("java-archive") || mime.includes("x-java")) return true;
   if (mime.includes("x-sh") || mime.includes("x-shellscript")) return true;
 
-  // SVG kann JavaScript enthalten
+  // SVG can contain JavaScript
   if (mime.includes("svg")) return true;
 
   return false;
 }
 
 /**
- * Erkennt die FileType-Category anhand von MIME + Extension.
- * Wiederverwendet die utils.getFileTypeCategory() Logik, wird aber hier
- * für die DB-Speicherung aufbereitet. Executables/Code werden als solche markiert.
+ * Detects the FileType category based on MIME + extension.
+ * Reuses the utils.getFileTypeCategory() logic, but adapted
+ * for DB storage. Executables/code are marked as such.
  */
 export function getFileCategory(mimeType: string, fileName: string): FileTypeCategory {
-  // Die utils-Funktion dynamisch importieren um Zirkular-Imports zu vermeiden
-  // (utils.ts importiert keine file-security.ts, aber sicher ist sicher)
-  // Einfach die wichtige Logik hier duplizieren für die Kern-Kategorien:
+  // Import the utils function dynamically to avoid circular imports
+  // (utils.ts does not import file-security.ts, but better safe than sorry)
+  // Simply duplicate the important logic here for the core categories:
   const mime = mimeType.toLowerCase();
 
   if (mime.startsWith("video/")) return "video";
   if (mime.startsWith("audio/")) return "audio";
   if (mime.startsWith("image/")) {
-    // SVG ist potenziell gefährlich → als "executable"? Nein, als "other" oder "image"?
-    // SVG bleibt "image", wird aber nie inline ausgeliefert (isSafeInlineType)
+    // SVG is potentially dangerous → as "executable"? No, as "other" or "image"?
+    // SVG stays "image", but is never delivered inline (isSafeInlineType)
     return "image";
   }
 
-  // Sicherheitsrelevante Kategorien zuerst prüfen
+  // Check security-relevant categories first
   if (EXECUTABLE_EXTENSIONS.test(fileName)) return "executable";
   if (CODE_EXTENSIONS.test(fileName)) return "code";
 
-  // PDFs können JavaScript enthalten
+  // PDFs can contain JavaScript
   if (/\.(pdf|xps|oxps)$/i.test(fileName)) return "pdf";
   if (mime.includes("pdf")) return "pdf";
 
-  // Rest nach utils-Logik (ohne Import-Zirkel)
+  // Remaining logic based on utils (without import cycle)
   if (/\.(zip|rar|tar|gz|tgz|tbz|tbz2|txz|7z|bz2|xz|cab|arj|lha|lzh|zst|zstd|lz|lz4|br|sit|sitx|zipx|egg|z)$/i.test(fileName)) return "archive";
   if (/\.(stl|obj|fbx|step|stp|iges|igs|dwg|dxf|blend|glb|gltf|3ds|dae|ply|3mf|amf|c4d|max|ma|mb|skp|sldprt|sldasm|sat|x_t|x_b|ifc|ipt|iam|rvt|usdz)$/i.test(fileName)) return "model";
   if (/\.(json|jsonl|ndjson|xml|yaml|yml|toml|ini|cfg|conf|properties|opml|ics|ical|vcf|vcard|plist|reg|har|torrent|geojson|kml|gpx)$/i.test(fileName)) return "data";
@@ -108,30 +108,30 @@ export function getFileCategory(mimeType: string, fileName: string): FileTypeCat
 }
 
 /**
- * Bestimmt ob eine Datei sicher inline ausgeliefert werden darf.
- * SVG und alle riskanten Typen → false.
+ * Determines whether a file is safe to deliver inline.
+ * SVG and all risky types → false.
  */
 export function isSafeInlineType(mimeType: string, fileName: string): boolean {
   const mime = (mimeType || "").toLowerCase();
 
-  // SVG niemals inline (Script-Injection)
+  // SVG never inline (script injection)
   if (mime.includes("svg") || /\.svgz?$/i.test(fileName)) return false;
 
-  // Extension-basierte Blacklist
+  // Extension-based blacklist
   if (UNSAFE_EXTENSIONS.test(fileName)) return false;
 
-  // MIME-Whitelist
+  // MIME whitelist
   if (SAFE_INLINE_VIDEO.includes(mime)) return true;
   if (SAFE_INLINE_AUDIO.includes(mime)) return true;
   if (SAFE_INLINE_IMAGE.includes(mime)) return true;
 
-  // Ansonsten: Nur wenn Extension sicher ist
+  // Otherwise: only if the extension is safe
   return SAFE_INLINE_EXTENSIONS.test(fileName);
 }
 
 /**
- * Magic-Bytes-Erkennung – prüft den echten Dateityp anhand der ersten Bytes.
- * Verhindert, dass bösartige Dateien als harmlose Typen getarnt werden.
+ * Magic-bytes detection - checks the real file type based on the first bytes.
+ * Prevents malicious files from being disguised as harmless types.
  */
 export function detectFileType(buffer: Buffer): { mimeType: string; category: string } {
   if (!buffer || buffer.length < 12) {
@@ -174,7 +174,7 @@ export function detectFileType(buffer: Buffer): { mimeType: string; category: st
     return { mimeType: "image/tiff", category: "image" };
   }
 
-  // SVG (XML-basiert, nach `<svg` oder `<?xml`+`<svg` suchen)
+  // SVG (XML-based, search for `<svg` or `<?xml`+`<svg`)
   if (buffer.toString("utf8", 0, 512).includes("<svg")) {
     return { mimeType: "image/svg+xml", category: "image" };
   }
@@ -184,7 +184,7 @@ export function detectFileType(buffer: Buffer): { mimeType: string; category: st
     return { mimeType: "application/pdf", category: "pdf" };
   }
 
-  // ZIP (auch DOCX/XLSX/PPTX, JAR, etc.)
+  // ZIP (also DOCX/XLSX/PPTX, JAR, etc.)
   if (buffer[0] === 0x50 && buffer[1] === 0x4b && (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07)) {
     return { mimeType: "application/zip", category: "archive" };
   }
@@ -220,7 +220,7 @@ export function detectFileType(buffer: Buffer): { mimeType: string; category: st
 
   // WEBM / MKV (EBML)
   if (buffer.toString("ascii", 0, 4) === "\x1a\x45\xdf\xa3") {
-    // Unterscheide WebM von MKV anhand des DocType
+    // Distinguish WebM from MKV based on the DocType
     const docType = buffer.toString("utf8", 4, 64).includes("webm") ? "webm" : "matroska";
     if (docType === "webm") {
       return { mimeType: "video/webm", category: "video" };
@@ -284,9 +284,9 @@ export function detectFileType(buffer: Buffer): { mimeType: string; category: st
 }
 
 /**
- * Magic-Bytes-Erkennung für Schriftdateien (TTF/OTF/WOFF/WOFF2/TTC).
- * Prüft, ob die Datei wirklich eine Schrift ist, bevor sie als Custom-Font
- * gespeichert wird.
+ * Magic-bytes detection for font files (TTF/OTF/WOFF/WOFF2/TTC).
+ * Checks whether the file really is a font before it is stored
+ * as a custom font.
  */
 export function detectFontType(buffer: Buffer): { mimeType: string; ext: string; format: string } | null {
   if (!buffer || buffer.length < 4) return null;
@@ -318,8 +318,8 @@ export function detectFontType(buffer: Buffer): { mimeType: string; ext: string;
 }
 
 /**
- * Baut einheitliche Response-Header für Datei-Auslieferung.
- * Setzt immer X-Content-Type-Options: nosniff.
+ * Builds consistent response headers for file delivery.
+ * Always sets X-Content-Type-Options: nosniff.
  */
 export function buildFileHeaders(
   mimeType: string,
@@ -343,8 +343,8 @@ export function buildFileHeaders(
 }
 
 /**
- * Erstellt das Content-Disposition-Header für Download oder Inline-Anzeige.
- * Sorgt für korrekte Kodierung des Dateinamens.
+ * Creates the Content-Disposition header for download or inline display.
+ * Ensures correct encoding of the file name.
  */
 export function buildContentDisposition(
   fileName: string,
@@ -355,8 +355,8 @@ export function buildContentDisposition(
 }
 
 /**
- * Bestimmt ob eine Datei als Download (attachment) oder Inline ausgeliefert werden soll.
- * Nicht-sichere Typen → immer attachment.
+ * Determines whether a file should be delivered as a download (attachment) or inline.
+ * Non-safe types → always attachment.
  */
 export function getDeliveryDisposition(
   mimeType: string,

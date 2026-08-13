@@ -45,7 +45,7 @@ export async function PUT(request: NextRequest) {
 
       const valid = await bcrypt.compare(currentPassword, user.password)
       if (!valid) {
-        return NextResponse.json({ error: "Aktuelles Passwort ist falsch" }, { status: 400 })
+        return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 })
       }
 
       updateData.password = await bcrypt.hash(newPassword, 12)
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Update fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Update failed" }, { status: 500 })
   }
 }
 
@@ -71,7 +71,7 @@ export async function DELETE() {
   try {
     const userId = (session.user as any).id
 
-    // Delete all files from disk (zentrale Pfad-Logik, inkl. User-Ordner)
+    // Delete all files from disk (central path logic, incl. user folder)
     const files = await prisma.file.findMany({ where: { userId } })
 
     for (const file of files) {
@@ -85,6 +85,6 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Löschen fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Deletion failed" }, { status: 500 })
   }
 }

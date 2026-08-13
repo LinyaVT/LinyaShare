@@ -4,14 +4,14 @@ import { existsSync } from "fs";
 import { UPLOAD_DIR, IMPORT_DIR } from "./constants";
 
 /**
- * Zentrale Pfad-Auflösung für Dateien.
+ * Central path resolution for files.
  *
  * Layout:
- *   - User-Uploads:  /data/uploads/<userId>/<fileName>
- *   - Admin-Importe: /data/import/<fileName>
+ *   - User uploads:  /data/uploads/<userId>/<fileName>
+ *   - Admin imports: /data/import/<fileName>
  *
- * Fallback: Bestehende Dateien, die noch flach in /data/uploads liegen
- * (vor dem Umbau), werden weiterhin gefunden.
+ * Fallback: Existing files that still lie flat in /data/uploads
+ * (before the restructure) are still found.
  */
 
 export interface StorageFileLike {
@@ -20,8 +20,8 @@ export interface StorageFileLike {
 }
 
 /**
- * Liefert den Ziel-Ordner für einen User (Uploads) und legt ihn an.
- * Ordner-Rechte: 0755 (kein Schreibzugriff für Andere, keine Execute-Bits für Dateien).
+ * Returns the target folder for a user (uploads) and creates it.
+ * Folder permissions: 0755 (no write access for others, no execute bits for files).
  */
 export async function ensureUserUploadDir(userId: string): Promise<string> {
   const dir = path.join(UPLOAD_DIR, userId);
@@ -32,8 +32,8 @@ export async function ensureUserUploadDir(userId: string): Promise<string> {
 }
 
 /**
- * Vollständiger Pfad zu einer Datei im User-Uploads-Ordner.
- * Fallback auf flachen Pfad (Legacy), falls der User-Ordner nicht existiert.
+ * Full path to a file in the user uploads folder.
+ * Falls back to the flat path (legacy) if the user folder does not exist.
  */
 export function getUploadPath(file: StorageFileLike): string {
   if (file.userId) {
@@ -44,15 +44,15 @@ export function getUploadPath(file: StorageFileLike): string {
 }
 
 /**
- * Vollständiger Pfad zu einer Datei im Import-Ordner.
+ * Full path to a file in the import folder.
  */
 export function getImportPath(file: StorageFileLike): string {
   return path.join(IMPORT_DIR, file.name);
 }
 
 /**
- * Findet den tatsächlichen Pfad einer Datei (uploads ODER import).
- * Backward-kompatibel: existierende flache Dateien in /data/uploads werden gefunden.
+ * Finds the actual path of a file (uploads OR import).
+ * Backward-compatible: existing flat files in /data/uploads are found.
  */
 export function getFilePath(file: StorageFileLike): string {
   const uploadPath = getUploadPath(file);
@@ -61,12 +61,12 @@ export function getFilePath(file: StorageFileLike): string {
   const importPath = getImportPath(file);
   if (existsSync(importPath)) return importPath;
 
-  // Letzter Fallback: Der Upload-Pfad, falls er noch nicht existiert (Fehlerfall)
+  // Last fallback: the upload path, even if it does not exist yet (error case)
   return uploadPath;
 }
 
 /**
- * Findet eine Datei zurück und liefert null, wenn sie nirgends existiert.
+ * Finds a file and returns null if it exists nowhere.
  */
 export function findFileOnDisk(file: StorageFileLike): string | null {
   const uploadPath = getUploadPath(file);
@@ -79,7 +79,7 @@ export function findFileOnDisk(file: StorageFileLike): string | null {
 }
 
 /**
- * Verschiebt eine Datei aus dem Import-Ordner in den User-Uploads-Ordner.
+ * Moves a file from the import folder into the user uploads folder.
  */
 export async function moveImportToUploads(file: StorageFileLike, userId: string): Promise<string> {
   const importPath = getImportPath(file);
@@ -95,8 +95,8 @@ export async function moveImportToUploads(file: StorageFileLike, userId: string)
 }
 
 /**
- * Löscht eine Datei vom Datenträger (egal ob Upload oder Import).
- * Ignoriert Fehler, wenn die Datei nicht existiert.
+ * Deletes a file from disk (whether upload or import).
+ * Ignores errors if the file does not exist.
  */
 export async function removeFileFromDisk(file: StorageFileLike): Promise<void> {
   const uploadPath = getFilePath(file);
@@ -106,7 +106,7 @@ export async function removeFileFromDisk(file: StorageFileLike): Promise<void> {
 }
 
 /**
- * Prüft ob eine Datei existiert (Uploads oder Import).
+ * Checks whether a file exists (uploads or import).
  */
 export function fileExistsOnDisk(file: StorageFileLike): boolean {
   return existsSync(getUploadPath(file)) || existsSync(getImportPath(file));

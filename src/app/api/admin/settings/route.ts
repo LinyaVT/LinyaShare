@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    // Einzel-Update: { key, value }
+    // Single update: { key, value }
     const { key, value } = body
 
     await prisma.setting.upsert({
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: "Update fehlgeschlagen" }, { status: 500 })
+    return NextResponse.json({ error: "Update failed" }, { status: 500 })
   }
 }
 

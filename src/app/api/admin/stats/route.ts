@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   })
 
-  // Tages-Buckets anlegen (Lücken mit 0 füllen)
+  // Create daily buckets (fill gaps with 0)
   const buckets: Record<string, { downloads: number; views: number; uploads: number; registrations: number }> = {}
   const series: { date: string; downloads: number; views: number; uploads: number; registrations: number }[] = []
 
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
   const sum = (fn: (s: typeof series[number]) => number) => series.reduce((acc, s) => acc + fn(s), 0)
 
-  // Filter + Search auf die Activity-Events anwenden
+  // Apply filter + search to the activity events
   let activityEvents = events
   if (activityType !== "ALL") {
     activityEvents = activityEvents.filter((ev) => ev.type === activityType)

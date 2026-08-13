@@ -33,7 +33,7 @@ export default async function RootLayout({
     console.error("Failed to load theme settings:", error)
   }
 
-  // Self-Hosted + Custom-Fonts: FONT_MAP (lokal) um Admin-Uploads erweitern
+  // Self-hosted + custom fonts: extend FONT_MAP (local) with admin uploads
   const fontMap = mergeFontMaps(FONT_MAP, customFontsToMap(parseCustomFonts(settings["theme.customFonts"])))
 
   const theme = resolveTheme(settings, fontMap)
@@ -41,7 +41,7 @@ export default async function RootLayout({
   const themeStyle = cssVarsToString(cssVars)
   const dataAttrs = themeToDataAttributes(theme)
 
-  // Lokale Font-Links für die gewählten Schriften
+  // Local font links for the selected fonts
   const fontUrls = [...new Set([theme.fontBody, theme.fontHeading])]
     .map((key) => fontMap[key]?.url)
     .filter(Boolean)
