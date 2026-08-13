@@ -1,6 +1,6 @@
 {
   "name": "linyashare",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -16,6 +16,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:restart": "docker compose restart",
+    "fonts:download": "npx tsc scripts/download-fonts.ts --module commonjs --moduleResolution node --target ES2020 --esModuleInterop --skipLibCheck --outDir .fonts-dl && node .fonts-dl/scripts/download-fonts.js",
     "setup": "npm run db:generate && npm run db:push"
   },
   "dependencies": {

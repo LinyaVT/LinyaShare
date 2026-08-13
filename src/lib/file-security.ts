@@ -284,6 +284,40 @@ export function detectFileType(buffer: Buffer): { mimeType: string; category: st
 }
 
 /**
+ * Magic-Bytes-Erkennung für Schriftdateien (TTF/OTF/WOFF/WOFF2/TTC).
+ * Prüft, ob die Datei wirklich eine Schrift ist, bevor sie als Custom-Font
+ * gespeichert wird.
+ */
+export function detectFontType(buffer: Buffer): { mimeType: string; ext: string; format: string } | null {
+  if (!buffer || buffer.length < 4) return null;
+
+  // WOFF2
+  if (buffer[0] === 0x77 && buffer[1] === 0x4f && buffer[2] === 0x46 && buffer[3] === 0x32) {
+    return { mimeType: "font/woff2", ext: ".woff2", format: "woff2" };
+  }
+  // WOFF
+  if (buffer[0] === 0x77 && buffer[1] === 0x4f && buffer[2] === 0x46 && buffer[3] === 0x46) {
+    return { mimeType: "font/woff", ext: ".woff", format: "woff" };
+  }
+
+  const tag = buffer.toString("ascii", 0, 4);
+  // TrueType collection
+  if (tag === "ttcf") {
+    return { mimeType: "font/collection", ext: ".ttc", format: "truetype" };
+  }
+  // OpenType (CFF)
+  if (tag === "OTTO") {
+    return { mimeType: "font/otf", ext: ".otf", format: "opentype" };
+  }
+  // TrueType (glyf)
+  if (buffer[0] === 0x00 && buffer[1] === 0x01 && buffer[2] === 0x00 && buffer[3] === 0x00) {
+    return { mimeType: "font/ttf", ext: ".ttf", format: "truetype" };
+  }
+
+  return null;
+}
+
+/**
  * Baut einheitliche Response-Header für Datei-Auslieferung.
  * Setzt immer X-Content-Type-Options: nosniff.
  */

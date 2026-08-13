@@ -92,156 +92,242 @@ function clampNumber(v: string | undefined, min: number, max: number, fallback: 
 }
 
 // ──────────────────────────────────────────────────────────
-// FONT MAP (Google Fonts, runtime-geladen via <link>)
+// FONT MAP (Self-Hosted, via /api/fonts/<key>/style.css)
 // ──────────────────────────────────────────────────────────
+// Die Schriftdateien werden lokal unter data/uploads/global/fonts
+// abgelegt und vom Server ausgeliefert. Beim ersten Aufruf lädt der
+// Server die woff2-Dateien einmalig von Google Fonts herunter und
+// cached sie dort – Besucher greifen danach nie auf Google zu.
+// Custom-Fonts (Admin-Upload) werden über `theme.customFonts` ergänzt.
 
 export interface FontEntry {
   label: string
   family: string
   url: string
+  /** Google-Fonts-CSS-URL – wird nur beim einmaligen Erst-Download genutzt. */
+  googleUrl?: string
 }
 
-export const FONT_MAP: Record<string, FontEntry> = {
+export type FontMap = Record<string, FontEntry>
+
+export const FONT_MAP: FontMap = {
   Inter: {
     label: "Inter",
     family: "'Inter', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Inter/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap",
   },
   Orbitron: {
     label: "Orbitron",
     family: "'Orbitron', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap",
+    url: "/api/fonts/Orbitron/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap",
   },
   Poppins: {
     label: "Poppins",
     family: "'Poppins', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Poppins/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap",
   },
   Roboto: {
     label: "Roboto",
     family: "'Roboto', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap",
+    url: "/api/fonts/Roboto/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap",
   },
   "Open Sans": {
     label: "Open Sans",
     family: "'Open Sans', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Open Sans/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap",
   },
   Montserrat: {
     label: "Montserrat",
     family: "'Montserrat', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Montserrat/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap",
   },
   "Space Grotesk": {
     label: "Space Grotesk",
     family: "'Space Grotesk', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap",
+    url: "/api/fonts/Space Grotesk/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap",
   },
   Raleway: {
     label: "Raleway",
     family: "'Raleway', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Raleway/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800&display=swap",
   },
   Ubuntu: {
     label: "Ubuntu",
     family: "'Ubuntu', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap",
+    url: "/api/fonts/Ubuntu/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap",
   },
   "DM Sans": {
     label: "DM Sans",
     family: "'DM Sans', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap",
+    url: "/api/fonts/DM Sans/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap",
   },
   "Bebas Neue": {
     label: "Bebas Neue",
     family: "'Bebas Neue', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
+    url: "/api/fonts/Bebas Neue/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
   },
   "IBM Plex Sans": {
     label: "IBM Plex Sans",
     family: "'IBM Plex Sans', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap",
+    url: "/api/fonts/IBM Plex Sans/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap",
   },
   "JetBrains Mono": {
     label: "JetBrains Mono",
     family: "'JetBrains Mono', monospace",
-    url: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
+    url: "/api/fonts/JetBrains Mono/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
   },
   Lora: {
     label: "Lora",
     family: "'Lora', serif",
-    url: "https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap",
+    url: "/api/fonts/Lora/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap",
   },
   Merriweather: {
     label: "Merriweather",
     family: "'Merriweather', serif",
-    url: "https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&display=swap",
+    url: "/api/fonts/Merriweather/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&display=swap",
   },
   "Playfair Display": {
     label: "Playfair Display",
     family: "'Playfair Display', serif",
-    url: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&display=swap",
+    url: "/api/fonts/Playfair Display/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&display=swap",
   },
   "Nunito Sans": {
     label: "Nunito Sans",
     family: "'Nunito Sans', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap",
+    url: "/api/fonts/Nunito Sans/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap",
   },
   "Source Sans 3": {
     label: "Source Sans 3",
     family: "'Source Sans 3', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap",
+    url: "/api/fonts/Source Sans 3/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap",
   },
   Manrope: {
     label: "Manrope",
     family: "'Manrope', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Manrope/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap",
   },
   Outfit: {
     label: "Outfit",
     family: "'Outfit', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Outfit/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
   },
   Sora: {
     label: "Sora",
     family: "'Sora', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Sora/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap",
   },
   Archivo: {
     label: "Archivo",
     family: "'Archivo', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Archivo/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap",
   },
   "Exo 2": {
     label: "Exo 2",
     family: "'Exo 2', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&display=swap",
+    url: "/api/fonts/Exo 2/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&display=swap",
   },
   Rajdhani: {
     label: "Rajdhani",
     family: "'Rajdhani', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap",
+    url: "/api/fonts/Rajdhani/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap",
   },
   Audiowide: {
     label: "Audiowide",
     family: "'Audiowide', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Audiowide&display=swap",
+    url: "/api/fonts/Audiowide/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Audiowide&display=swap",
   },
   Righteous: {
     label: "Righteous",
     family: "'Righteous', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Righteous&display=swap",
+    url: "/api/fonts/Righteous/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Righteous&display=swap",
   },
   Bungee: {
     label: "Bungee",
     family: "'Bungee', sans-serif",
-    url: "https://fonts.googleapis.com/css2?family=Bungee&display=swap",
+    url: "/api/fonts/Bungee/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Bungee&display=swap",
   },
   "Press Start 2P": {
     label: "Press Start 2P",
     family: "'Press Start 2P', cursive",
-    url: "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap",
+    url: "/api/fonts/Press Start 2P/style.css",
+    googleUrl: "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap",
   },
+}
+
+// ──────────────────────────────────────────────────────────
+// CUSTOM FONTS (Admin-Uploads)
+// ──────────────────────────────────────────────────────────
+
+export interface CustomFontEntry {
+  key: string
+  label: string
+  family: string
+  ext: string
+  mime: string
+  size?: number
+}
+
+const CUSTOM_KEY_RE = /^custom-[a-z0-9-]+$/
+const isSafeCustomFont = (e: unknown): e is CustomFontEntry => {
+  if (!e || typeof e !== "object") return false
+  const f = e as CustomFontEntry
+  return (
+    typeof f.key === "string" && CUSTOM_KEY_RE.test(f.key) &&
+    typeof f.label === "string" && typeof f.family === "string" &&
+    typeof f.ext === "string" && typeof f.mime === "string"
+  )
+}
+
+/** Parsiert das `theme.customFonts`-Setting (JSON-Array) → list of entries. */
+export function parseCustomFonts(json: string | undefined | null): CustomFontEntry[] {
+  if (!json) return []
+  try {
+    const parsed = JSON.parse(json)
+    return Array.isArray(parsed) ? parsed.filter(isSafeCustomFont) : []
+  } catch {
+    return []
+  }
+}
+
+/** Wandelt Custom-Font-Entries in eine FontMap (Body/Heading-Auswahl). */
+export function customFontsToMap(entries: CustomFontEntry[]): FontMap {
+  const map: FontMap = {}
+  for (const e of entries) {
+    map[e.key] = { label: e.label, family: e.family, url: `/api/fonts/${e.key}/style.css` }
+  }
+  return map
+}
+
+/** Merged zwei FontMaps (base wird von extra überlagert). */
+export function mergeFontMaps(base: FontMap, extra: FontMap): FontMap {
+  return { ...base, ...extra }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -296,7 +382,7 @@ const RAMP_BLACK: Record<number, number> = { 600: 0.12, 700: 0.25, 800: 0.38, 90
 // RESOLVE THEME (settings map -> ThemeConfig)
 // ──────────────────────────────────────────────────────────
 
-export function resolveTheme(settings: Record<string, string> | undefined): ThemeConfig {
+export function resolveTheme(settings: Record<string, string> | undefined, fontMap: FontMap = FONT_MAP): ThemeConfig {
   const s = settings || {}
   const get = (key: string, fallback: string) => {
     const v = s[`theme.${key}`]
@@ -310,8 +396,8 @@ export function resolveTheme(settings: Record<string, string> | undefined): Them
   const gradientDirection = isGradientDirection(get("gradientDirection", DEFAULT_THEME.gradientDirection)) ? get("gradientDirection", DEFAULT_THEME.gradientDirection) : DEFAULT_THEME.gradientDirection
   const backgroundDirection = isGradientDirection(get("backgroundDirection", DEFAULT_THEME.backgroundDirection)) ? get("backgroundDirection", DEFAULT_THEME.backgroundDirection) : DEFAULT_THEME.backgroundDirection
 
-  const fontBody = FONT_MAP[get("fontBody", "Inter")] ? get("fontBody", "Inter") : "Inter"
-  const fontHeading = FONT_MAP[get("fontHeading", "Orbitron")] ? get("fontHeading", "Orbitron") : "Orbitron"
+  const fontBody = fontMap[get("fontBody", "Inter")] ? get("fontBody", "Inter") : "Inter"
+  const fontHeading = fontMap[get("fontHeading", "Orbitron")] ? get("fontHeading", "Orbitron") : "Orbitron"
 
   return {
     accentMode,
@@ -348,7 +434,7 @@ function buildGradient(kind: "linear" | "radial", direction: string, from: strin
 // COMPUTE CSS VARS
 // ──────────────────────────────────────────────────────────
 
-export function computeCssVars(theme: ThemeConfig): Record<string, string> {
+export function computeCssVars(theme: ThemeConfig, fontMap: FontMap = FONT_MAP): Record<string, string> {
   const baseHex = theme.accentMode === "single" ? theme.accentColor : theme.accentFrom
   const base = hexToRgb(baseHex)
   const vars: Record<string, string> = {}
@@ -408,8 +494,8 @@ export function computeCssVars(theme: ThemeConfig): Record<string, string> {
   vars["--particle-color"] = toTriplet(base)
 
   // Fonts
-  vars["--font-body"] = FONT_MAP[theme.fontBody]?.family || FONT_MAP.Inter.family
-  vars["--font-heading"] = FONT_MAP[theme.fontHeading]?.family || FONT_MAP.Orbitron.family
+  vars["--font-body"] = fontMap[theme.fontBody]?.family || fontMap.Inter?.family || FONT_MAP.Inter.family
+  vars["--font-heading"] = fontMap[theme.fontHeading]?.family || fontMap.Orbitron?.family || FONT_MAP.Orbitron.family
 
   return vars
 }

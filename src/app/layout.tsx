@@ -4,7 +4,7 @@ import SessionProvider from "@/components/SessionProvider"
 import { ToastProvider } from "@/components/Toast"
 import AnimatedBackground from "@/components/AnimatedBackground"
 import { prisma } from "@/lib/prisma"
-import { resolveTheme, computeCssVars, cssVarsToString, themeToDataAttributes, FONT_MAP } from "@/lib/theme"
+import { resolveTheme, computeCssVars, cssVarsToString, themeToDataAttributes, FONT_MAP, mergeFontMaps, parseCustomFonts, customFontsToMap } from "@/lib/theme"
 import { getSiteName } from "@/lib/settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,14 +33,17 @@ export default async function RootLayout({
     console.error("Failed to load theme settings:", error)
   }
 
-  const theme = resolveTheme(settings)
-  const cssVars = computeCssVars(theme)
+  // Self-Hosted + Custom-Fonts: FONT_MAP (lokal) um Admin-Uploads erweitern
+  const fontMap = mergeFontMaps(FONT_MAP, customFontsToMap(parseCustomFonts(settings["theme.customFonts"])))
+
+  const theme = resolveTheme(settings, fontMap)
+  const cssVars = computeCssVars(theme, fontMap)
   const themeStyle = cssVarsToString(cssVars)
   const dataAttrs = themeToDataAttributes(theme)
 
-  // Google-Fonts Links für die gewählten Schriften
+  // Lokale Font-Links für die gewählten Schriften
   const fontUrls = [...new Set([theme.fontBody, theme.fontHeading])]
-    .map((key) => FONT_MAP[key]?.url)
+    .map((key) => fontMap[key]?.url)
     .filter(Boolean)
 
   return (

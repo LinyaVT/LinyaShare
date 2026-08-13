@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -8,7 +8,7 @@ import {
   Check, X, Globe, Mail, MessageCircle, ExternalLink, Users,
   HardDrive, ToggleLeft, FileText, Shield, Save, Settings2,
   ChevronDown, ChevronUp, HelpCircle, RotateCcw, Settings,
-  Palette, Paintbrush, Image as ImageIcon, LayoutGrid, Type, Sparkles,
+  Palette, Paintbrush, Image as ImageIcon, LayoutGrid, Type, Sparkles, Upload,
 } from "lucide-react"
 import Header from "@/components/Header"
 import { useToast } from "@/components/Toast"
@@ -16,9 +16,9 @@ import ConfirmDialog from "@/components/ConfirmDialog"
 import SkeletonLoader from "@/components/SkeletonLoader"
 import {
   DEFAULT_THEME, FONT_MAP, computeCssVars,
-  resolveTheme, themeToDataAttributes,
+  resolveTheme, themeToDataAttributes, mergeFontMaps, customFontsToMap,
 } from "@/lib/theme"
-import type { ThemeConfig } from "@/lib/theme"
+import type { ThemeConfig, FontMap, CustomFontEntry } from "@/lib/theme"
 
 const DEFAULT_PRIVACY = `
 > [!INFO]
@@ -361,6 +361,16 @@ export default function AdminSettingsPage() {
   const [bgUploading, setBgUploading] = useState(false)
   const [bgDeleting, setBgDeleting] = useState(false)
   const [bgCacheBust, setBgCacheBust] = useState(Date.now())
+  const [customFonts, setCustomFonts] = useState<CustomFontEntry[]>([])
+  const [fontName, setFontName] = useState("")
+  const [fontFile, setFontFile] = useState<File | null>(null)
+  const [fontUploading, setFontUploading] = useState(false)
+  const [fontDeleting, setFontDeleting] = useState<string | null>(null)
+  const fontFileInputRef = useRef<HTMLInputElement>(null)
+
+  // Effektive FontMap: Builtin (lokal gehostet) + Custom-Fonts
+  const fontMap = useMemo<FontMap>(() => mergeFontMaps(FONT_MAP, customFontsToMap(customFonts)), [customFonts])
+  const fontOptions = Object.entries(fontMap).map(([k, f]) => ({ value: k, label: f.label }))
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login")
@@ -369,16 +379,20 @@ export default function AdminSettingsPage() {
   }, [status])
 
   async function loadSettings() {
-    const res = await fetch("/api/admin/settings")
-    const data = await res.json()
-    const raw = data.settings || {}
+    const [settingsRes, fontsRes] = await Promise.all([
+      fetch("/api/admin/settings").then((r) => r.json()),
+      fetch("/api/admin/fonts").then((r) => r.json()).catch(() => ({ fonts: [] })),
+    ])
+    const raw = settingsRes.settings || {}
     // Alte, fälschlich als MiB gespeicherte defaultMaxSize-Werte bereinigen
     const normalized = { ...raw }
     if (normalized.defaultMaxSize !== undefined) {
       normalized.defaultMaxSize = normalizeMaxSize(normalized.defaultMaxSize)
     }
+    const entries: CustomFontEntry[] = Array.isArray(fontsRes.fonts) ? fontsRes.fonts : []
+    setCustomFonts(entries)
     setSettings(normalized)
-    setAppearance(resolveTheme(normalized))
+    setAppearance(resolveTheme(normalized, mergeFontMaps(FONT_MAP, customFontsToMap(entries))))
     previewReadyRef.current = true
     setLoading(false)
   }
@@ -386,9 +400,9 @@ export default function AdminSettingsPage() {
   // ── Appearance: Live-Vorschau ──
   const previewReadyRef = useRef(false)
 
-  function applyAppearancePreview(theme: ThemeConfig) {
+  function applyAppearancePreview(theme: ThemeConfig, fm: FontMap) {
     const root = document.documentElement
-    const vars = computeCssVars(theme)
+    const vars = computeCssVars(theme, fm)
     for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v)
     const attrs = themeToDataAttributes(theme)
     for (const [k, v] of Object.entries(attrs)) root.setAttribute(k, v)
@@ -396,8 +410,21 @@ export default function AdminSettingsPage() {
 
   // Vorschau anwenden, sobald sich das Appearance-State ändert (nach dem Laden)
   useEffect(() => {
-    if (previewReadyRef.current) applyAppearancePreview(appearance)
-  }, [appearance])
+    if (previewReadyRef.current) applyAppearancePreview(appearance, fontMap)
+  }, [appearance, fontMap])
+
+  // Custom-Font-Faces für die Live-Vorschau nachladen
+  useEffect(() => {
+    for (const k of [appearance.fontBody, appearance.fontHeading]) {
+      if (!k || !k.startsWith("custom-")) continue
+      if (document.querySelector(`link[data-font="${k}"]`)) continue
+      const link = document.createElement("link")
+      link.rel = "stylesheet"
+      link.href = `/api/fonts/${k}/style.css`
+      link.dataset.font = k
+      document.head.appendChild(link)
+    }
+  }, [appearance.fontBody, appearance.fontHeading, customFonts])
 
   function updateAppearance(patch: Partial<ThemeConfig>) {
     setAppearance((prev) => ({ ...prev, ...patch }))
@@ -431,7 +458,7 @@ export default function AdminSettingsPage() {
   async function handleResetAppearance() {
     setShowResetAppearanceConfirm(false)
     setAppearance({ ...DEFAULT_THEME })
-    applyAppearancePreview({ ...DEFAULT_THEME })
+    applyAppearancePreview({ ...DEFAULT_THEME }, fontMap)
     try {
       const payload = Object.entries(DEFAULT_THEME).map(([key, value]) => ({
         key: `theme.${key}`,
@@ -510,6 +537,60 @@ export default function AdminSettingsPage() {
       toastError("Failed to remove background image")
     } finally {
       setBgDeleting(false)
+    }
+  }
+
+  // ── Custom-Fonts: Upload / Löschen ──
+  async function handleFontUpload() {
+    if (!fontName.trim() || !fontFile) return
+    setFontUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("name", fontName.trim())
+      fd.append("file", fontFile)
+      const res = await fetch("/api/admin/fonts", { method: "POST", body: fd })
+      const data = await res.json()
+      if (!res.ok) {
+        toastError(data.error || "Failed to upload font")
+        return
+      }
+      toastSuccess(`Font "${data.font.label}" uploaded`)
+      setCustomFonts((prev) => [...prev, data.font])
+      setFontName("")
+      setFontFile(null)
+      if (fontFileInputRef.current) fontFileInputRef.current.value = ""
+    } catch {
+      toastError("Failed to upload font")
+    } finally {
+      setFontUploading(false)
+    }
+  }
+
+  async function handleFontDelete(f: CustomFontEntry) {
+    setFontDeleting(f.key)
+    try {
+      const res = await fetch("/api/admin/fonts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: f.key }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toastError(data.error || "Failed to delete font")
+        return
+      }
+      toastSuccess(`Font "${f.label}" deleted`)
+      setCustomFonts((prev) => prev.filter((x) => x.key !== f.key))
+      // Falls der gelöschte Font aktuell gewählt ist → auf Default zurückfallen
+      setAppearance((prev) => ({
+        ...prev,
+        fontBody: prev.fontBody === f.key ? "Inter" : prev.fontBody,
+        fontHeading: prev.fontHeading === f.key ? "Orbitron" : prev.fontHeading,
+      }))
+    } catch {
+      toastError("Failed to delete font")
+    } finally {
+      setFontDeleting(null)
     }
   }
 
@@ -1135,18 +1216,80 @@ export default function AdminSettingsPage() {
                         label="Body font"
                         value={appearance.fontBody}
                         onChange={(v) => updateAppearance({ fontBody: v })}
-                        options={Object.entries(FONT_MAP).map(([k, f]) => ({ value: k, label: f.label }))}
+                        options={fontOptions}
                       />
                       <SelectField
                         label="Heading font"
                         value={appearance.fontHeading}
                         onChange={(v) => updateAppearance({ fontHeading: v })}
-                        options={Object.entries(FONT_MAP).map(([k, f]) => ({ value: k, label: f.label }))}
+                        options={fontOptions}
                       />
                     </div>
                     <p className="text-dark-500 text-xs mt-3">
-                      Fonts are loaded from Google Fonts and applied globally. Headings and the logo use the heading font.
+                      All fonts are self-hosted from <code className="text-dark-300">data/uploads/global/fonts</code> –
+                      no requests to Google Fonts on the live site. Headings and the logo use the heading font.
                     </p>
+
+                    {/* Custom Fonts (Admin-Upload) */}
+                    <div className="mt-6 pt-5 border-t border-dark-600/20">
+                      <p className="text-sm font-medium text-white mb-3">Custom fonts</p>
+                      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                        <input
+                          type="text"
+                          value={fontName}
+                          onChange={(e) => setFontName(e.target.value)}
+                          placeholder="Font name (e.g. MyFont)"
+                          className="flex-1 min-w-0 bg-dark-800/30 border border-dark-500/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500/40"
+                        />
+                        <label className="bg-dark-800/30 border border-dashed border-dark-500/40 text-dark-300 hover:text-white text-sm rounded-lg px-3 py-2 cursor-pointer text-center">
+                          <span>{fontFile ? fontFile.name : "Choose font file (TTF/OTF/WOFF/WOFF2)"}</span>
+                          <input
+                            ref={fontFileInputRef}
+                            type="file"
+                            accept=".ttf,.otf,.woff,.woff2,.ttc"
+                            onChange={(e) => setFontFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleFontUpload}
+                        disabled={fontUploading || !fontName.trim() || !fontFile}
+                        className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Upload className="w-4 h-4" /> {fontUploading ? "Uploading..." : "Upload font"}
+                      </button>
+
+                      {customFonts.length > 0 && (
+                        <ul className="mt-4 space-y-2">
+                          {customFonts.map((f) => (
+                            <li
+                              key={f.key}
+                              className="flex items-center gap-3 bg-dark-800/30 border border-dark-600/20 rounded-lg px-3 py-2"
+                            >
+                              <span className="text-sm text-white flex-1 min-w-0 truncate">
+                                {f.label} <span className="text-dark-500 text-xs">({f.ext.slice(1).toUpperCase()})</span>
+                              </span>
+                              {f.size > 0 && (
+                                <span className="text-xs text-dark-500 font-mono tabular-nums">
+                                  {(f.size / 1024).toFixed(1)} KB
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleFontDelete(f)}
+                                disabled={fontDeleting === f.key}
+                                className="text-dark-400 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 disabled:opacity-40"
+                                title={`Delete ${f.label}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
 
                   {/* Actions */}

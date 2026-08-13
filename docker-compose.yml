@@ -39,6 +39,7 @@ services:
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       - UPLOAD_DIR=/app/data/uploads
       - IMPORT_DIR=/app/data/import
+      - GLOBAL_UPLOAD_DIR=/app/data/uploads/global
       
       # ── Node ──
       - NODE_ENV=production
