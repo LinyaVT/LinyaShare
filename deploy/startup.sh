@@ -108,5 +108,11 @@ cp -rf node_modules/.prisma .next/standalone/node_modules/ 2>/dev/null || true
 cp -f deploy/entry.js .next/standalone/entry.js
 
 # ── Server starten ────────────────────────────────────────────────────────────────
+# WICHTIG: node entry.js MUSS PID 1 werden. Deshalb erst exportieren und DANN
+# `exec node entry.js` – NICHT `exec env X=1 node entry.js`, denn env forkt node
+# als Kind und wird selbst PID 1. Stopp-Signale würden dann env (nicht unserem
+# Wrapper) erreichen und der Container bliebe in "Stopping" hängen.
+export PORT DATABASE_URL
+export HOSTNAME=0.0.0.0
 cd .next/standalone
-exec env PORT="$PORT" HOSTNAME=0.0.0.0 DATABASE_URL="$DATABASE_URL" node entry.js
+exec node entry.js
