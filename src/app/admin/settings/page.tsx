@@ -357,6 +357,10 @@ export default function AdminSettingsPage() {
   const [appearance, setAppearance] = useState<ThemeConfig>({ ...DEFAULT_THEME })
   const [savingAppearance, setSavingAppearance] = useState(false)
   const [showResetAppearanceConfirm, setShowResetAppearanceConfirm] = useState(false)
+  const [faviconExists, setFaviconExists] = useState(false)
+  const [faviconUploading, setFaviconUploading] = useState(false)
+  const [faviconDeleting, setFaviconDeleting] = useState(false)
+  const [faviconCacheBust, setFaviconCacheBust] = useState(Date.now())
   const [bgExists, setBgExists] = useState(false)
   const [bgUploading, setBgUploading] = useState(false)
   const [bgDeleting, setBgDeleting] = useState(false)
@@ -379,9 +383,10 @@ export default function AdminSettingsPage() {
   }, [status])
 
   async function loadSettings() {
-    const [settingsRes, fontsRes] = await Promise.all([
+    const [settingsRes, fontsRes, faviconRes] = await Promise.all([
       fetch("/api/admin/settings").then((r) => r.json()),
       fetch("/api/admin/fonts").then((r) => r.json()).catch(() => ({ fonts: [] })),
+      fetch("/api/admin/favicon").catch(() => null),
     ])
     const raw = settingsRes.settings || {}
     // Clean up old defaultMaxSize values that were mistakenly stored as MiB
@@ -393,6 +398,7 @@ export default function AdminSettingsPage() {
     setCustomFonts(entries)
     setSettings(normalized)
     setAppearance(resolveTheme(normalized, mergeFontMaps(FONT_MAP, customFontsToMap(entries))))
+    setFaviconExists(faviconRes?.ok === true)
     previewReadyRef.current = true
     setLoading(false)
   }
@@ -537,6 +543,49 @@ export default function AdminSettingsPage() {
       toastError("Failed to remove background image")
     } finally {
       setBgDeleting(false)
+    }
+  }
+
+  // ── Favicon: upload / delete ──
+  async function handleFaviconUpload(file: File) {
+    setFaviconUploading(true)
+    try {
+      const res = await fetch("/api/admin/favicon", {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toastError(data.error || "Failed to upload favicon")
+        return
+      }
+      toastSuccess("Favicon uploaded")
+      setFaviconCacheBust(Date.now())
+      setFaviconExists(true)
+    } catch {
+      toastError("Failed to upload favicon")
+    } finally {
+      setFaviconUploading(false)
+    }
+  }
+
+  async function handleFaviconRemove() {
+    setFaviconDeleting(true)
+    try {
+      const res = await fetch("/api/admin/favicon", { method: "DELETE" })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toastError(data.error || "Failed to remove favicon")
+        return
+      }
+      toastSuccess("Favicon removed")
+      setFaviconCacheBust(Date.now())
+      setFaviconExists(false)
+    } catch {
+      toastError("Failed to remove favicon")
+    } finally {
+      setFaviconDeleting(false)
     }
   }
 
@@ -763,6 +812,58 @@ export default function AdminSettingsPage() {
                       defaultValue={getSetting("siteName", "LinyaShare")}
                       placeholder="LinyaShare"
                     />
+                  </div>
+
+                  {/* Favicon */}
+                  <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-primary-400" /> Browser Icon (Favicon)
+                    </h2>
+                    <p className="text-dark-400 text-sm mb-4">
+                      Optional icon shown in the browser tab. PNG, JPG, GIF, WebP, AVIF and ICO files up to 2MB are supported.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl border border-dark-600/20 bg-dark-900/50 flex items-center justify-center overflow-hidden shrink-0">
+                        {faviconExists ? (
+                          <img
+                            src={`/api/admin/favicon?t=${faviconCacheBust}`}
+                            alt="Favicon preview"
+                            className="w-10 h-10 object-contain"
+                          />
+                        ) : (
+                          <img src="/favicon.ico" alt="Default favicon" className="w-10 h-10 object-contain opacity-60" />
+                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                        <label className="btn-secondary cursor-pointer inline-flex items-center justify-center !py-2 !px-4 text-sm">
+                          {faviconUploading ? "Uploading..." : faviconExists ? "Replace favicon" : "Upload favicon"}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/x-icon,.ico"
+                            disabled={faviconUploading}
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleFaviconUpload(file)
+                              e.target.value = ""
+                            }}
+                          />
+                        </label>
+                        {faviconExists && (
+                          <button
+                            type="button"
+                            onClick={handleFaviconRemove}
+                            disabled={faviconDeleting}
+                            className="btn-danger inline-flex items-center justify-center !py-2 !px-4 text-sm"
+                          >
+                            {faviconDeleting ? "Removing..." : "Remove"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-dark-500 text-xs mt-3">
+                      Removing the custom icon restores the built-in <code className="text-dark-300">public/favicon.ico</code>.
+                    </p>
                   </div>
 
                   {/* ──────────────── DANGER ZONE ──────────────── */}

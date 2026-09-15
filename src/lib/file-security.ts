@@ -283,6 +283,30 @@ export function detectFileType(buffer: Buffer): { mimeType: string; category: st
 }
 
 /**
+ * Detects the image formats accepted for the instance favicon.
+ * ICO needs a separate check because it is not part of the generic image
+ * detector above and can be as small as a few bytes.
+ */
+export function detectFaviconType(buffer: Buffer): { mimeType: string; ext: string } | null {
+  if (!buffer || buffer.length < 4) return null;
+
+  if (buffer[0] === 0x00 && buffer[1] === 0x00 && buffer[2] === 0x01 && buffer[3] === 0x00) {
+    return { mimeType: "image/x-icon", ext: ".ico" };
+  }
+
+  const detected = detectFileType(buffer);
+  const formats: Record<string, string> = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/avif": ".avif",
+  };
+  const ext = formats[detected.mimeType];
+  return ext ? { mimeType: detected.mimeType, ext } : null;
+}
+
+/**
  * Magic-bytes detection for font files (TTF/OTF/WOFF/WOFF2/TTC).
  * Checks whether the file really is a font before it is stored
  * as a custom font.

@@ -181,6 +181,10 @@ The look of the instance (accent colors, background, header, fonts) is stored in
 - **Complex gradient**: enable gradient mode, choose `from`/`to` colors and a direction (including `radial`) for buttons, the logo gradient and accent glows.
 - All values are sanitized: colors must be valid `#rrggbb` hex, directions come from a whitelist, fonts from a whitelist.
 
+### Favicon
+
+An administrator can upload an optional browser-tab icon from **Admin → Settings → General → Browser Icon (Favicon)**. PNG, JPG, GIF, WebP, AVIF and ICO files up to 2MB are accepted. The upload is stored in the global upload directory and served through `/api/favicon`; removing it restores the built-in `public/favicon.ico`.
+
 ---
 
 ## tsconfig.json
