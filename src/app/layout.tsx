@@ -12,6 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${siteName} - Secure File Sharing`,
     description: `Share files securely with password protection on ${siteName}. Modern file sharing for everyone.`,
+    icons: {
+      icon: "/api/favicon",
+      shortcut: "/api/favicon",
+      apple: "/api/favicon",
+    },
   }
 }
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildContentDisposition } from "../src/lib/file-security.ts";
+import { buildContentDisposition, detectFaviconType } from "../src/lib/file-security.ts";
 
 test("builds a compatible header for a plain ASCII file name", () => {
   assert.equal(
@@ -78,4 +78,16 @@ test("all problematic names remain valid HTTP header values", () => {
       });
     });
   }
+});
+
+test("accepts real raster and ICO favicon signatures only", () => {
+  assert.deepEqual(
+    detectFaviconType(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...new Array(4).fill(0)])),
+    { mimeType: "image/png", ext: ".png" }
+  );
+  assert.deepEqual(
+    detectFaviconType(Buffer.from([0x00, 0x00, 0x01, 0x00])),
+    { mimeType: "image/x-icon", ext: ".ico" }
+  );
+  assert.equal(detectFaviconType(Buffer.from("<svg></svg>")), null);
 });

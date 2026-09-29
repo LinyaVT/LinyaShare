@@ -14,6 +14,7 @@ export const UPLOAD_DIR = resolvePath(process.env.UPLOAD_DIR, 'data/uploads');
 export const IMPORT_DIR = resolvePath(process.env.IMPORT_DIR, 'data/import');
 export const GLOBAL_UPLOAD_DIR = resolvePath(process.env.GLOBAL_UPLOAD_DIR, 'data/uploads/global');
 export const BACKGROUND_DIR = path.join(GLOBAL_UPLOAD_DIR, 'background');
+export const FAVICON_DIR = path.join(GLOBAL_UPLOAD_DIR, 'favicon');
 export const FONTS_DIR = path.join(GLOBAL_UPLOAD_DIR, 'fonts');
 export const CUSTOM_FONTS_DIR = path.join(FONTS_DIR, 'custom');
 
